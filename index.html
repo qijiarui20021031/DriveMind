@@ -1,0 +1,1583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DriveMind: Mind-Evolving Belief Tracking for Closed-Loop Autonomous Driving</title>
+<meta name="description" content="DriveMind keeps several natural-language hypotheses about a traffic scene alive and reweights them as new camera frames arrive. NeurIPS 2026.">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<!-- Social preview. After deploying, change og:image / twitter:image / og:url to absolute URLs,
+     e.g. https://YOUR-NAME.github.io/drivemind/assets/og.jpg -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="DriveMind: Mind-Evolving Belief Tracking for Closed-Loop Autonomous Driving">
+<meta property="og:description" content="DriveMind keeps several natural-language hypotheses about a traffic scene alive and reweights them as new camera frames arrive. NeurIPS 2026.">
+<meta property="og:image" content="assets/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DriveMind: Mind-Evolving Belief Tracking for Closed-Loop Autonomous Driving">
+<meta name="twitter:description" content="DriveMind keeps several natural-language hypotheses about a traffic scene alive and reweights them as new camera frames arrive. NeurIPS 2026.">
+<meta name="twitter:image" content="assets/og.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@100..900&family=Overpass+Mono:wght@300..700&family=STIX+Two+Text:ital,wght@0,400;1,400&display=swap">
+<style>
+/* ==========================================================================
+   DriveMind project page
+   Layout: a light editorial page. Camera footage and live belief sit in dark
+   "monitor" panels; one full-bleed dark band holds the closed-loop cases.
+   Left-aligned grid, max 1180px. Colour is reserved for the four maneuvers.
+   ========================================================================== */
+:root{
+  --bg:#f1f3f2;            /* concrete */
+  --surface:#ffffff;       /* cards */
+  --figure:#ffffff;        /* paper figures keep a white ground in both themes */
+  --ink:#0f1317;
+  --ink-2:#353c44;
+  --muted:#5b646e;
+  --line:#d5dad9;
+  --line-2:#b9c0c0;
+  --chip:#e3e7e6;
+  --shadow:rgba(15,19,23,.30);
+  --dot-base:#949da5;      /* chart: baseline marks */
+  --bar-other:#c4cacc;     /* chart: other methods */
+  --bar-mid:#86909a;       /* chart: our own ablation */
+  /* monitor + band (dark in both themes) */
+  --monitor:#16191d;
+  --monitor-2:#20242a;
+  --monitor-line:#31373e;
+  --on-monitor:#e9ecef;
+  --on-monitor-2:#c3cad1;
+  --on-monitor-muted:#97a0aa;
+  --overlay:rgba(10,12,14,.68);
+  --band:#16191d;
+  --dyn-other:#59626b;     /* other scenarios in the dark-band chart */
+  /* the four maneuvers: light-surface steps, then dark-surface steps */
+  --stop:#e34948; --decel:#eda100; --go:#1baf7a; --lane:#2a78d6;
+  --stop-d:#d63a3f; --decel-d:#c98500; --go-d:#199e70; --lane-d:#3987e5;
+  /* type */
+  --display:"Overpass","Helvetica Neue",Arial,sans-serif;
+  --sans:"Overpass","Helvetica Neue",Arial,sans-serif;
+  --mono:"Overpass Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --math:"STIX Two Text","Cambria Math","Times New Roman",serif;
+  --wrap:1180px;
+  --gutter:clamp(16px,4vw,40px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1013; --surface:#171a1e; --figure:#ffffff; --ink:#e8ebee; --ink-2:#c4cbd2; --muted:#959fa9;
+    --line:#262b31; --line-2:#3b434b; --chip:#22272d; --shadow:rgba(0,0,0,.55);
+    --dot-base:#69727b; --bar-other:#363d44; --bar-mid:#737d86;
+    --monitor:#1a1e23; --monitor-2:#23282e; --monitor-line:#363d45; --band:#14171b;
+    --stop:#d63a3f; --decel:#c98500; --go:#199e70; --lane:#3987e5;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1013; --surface:#171a1e; --figure:#ffffff; --ink:#e8ebee; --ink-2:#c4cbd2; --muted:#959fa9;
+  --line:#262b31; --line-2:#3b434b; --chip:#22272d; --shadow:rgba(0,0,0,.55);
+  --dot-base:#69727b; --bar-other:#363d44; --bar-mid:#737d86;
+  --monitor:#1a1e23; --monitor-2:#23282e; --monitor-line:#363d45; --band:#14171b;
+  --stop:#d63a3f; --decel:#c98500; --go:#199e70; --lane:#3987e5;
+  color-scheme:dark;
+}
+
+/* ---------- base ---------- */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--bg)}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration-thickness:1px;text-underline-offset:.2em}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:3px}
+p{margin:0;text-wrap:pretty}
+.wrap{max-width:calc(var(--wrap) + 2 * var(--gutter));margin-inline:auto;padding-left:max(var(--gutter),env(safe-area-inset-left,0px));padding-right:max(var(--gutter),env(safe-area-inset-right,0px))}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mono{font-family:var(--mono)}
+[data-m="stop"]{--m:var(--stop)} [data-m="decel"]{--m:var(--decel)} [data-m="go"]{--m:var(--go)} [data-m="lane"]{--m:var(--lane)}
+.on-dark{--stop:var(--stop-d);--decel:var(--decel-d);--go:var(--go-d);--lane:var(--lane-d);color:var(--on-monitor)}
+.on-dark :focus-visible{outline-color:var(--on-monitor)}
+
+/* ---------- navigation ---------- */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--bg);background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:11px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;font-size:18px;letter-spacing:-.01em;line-height:1}
+.brand svg{width:26px;height:26px;flex:none}
+.brand span{padding-top:3px}
+.nav-links{display:flex;gap:2px;font-size:14.5px;font-weight:600}
+.nav-links a{text-decoration:none;padding:7px 10px 5px;border-radius:6px;color:var(--ink-2)}
+.nav-links a:hover{background:var(--chip);color:var(--ink)}
+@media (max-width:820px){.nav-links a:not(.keep){display:none}}
+
+/* ---------- hero ---------- */
+.hero{padding-block:clamp(32px,5.5vw,68px) clamp(36px,5vw,64px)}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:clamp(28px,5vw,72px);align-items:start}
+@media (max-width:1000px){.hero-grid{grid-template-columns:minmax(0,1fr)}}
+.sign{display:inline-block;padding:3px;border-radius:8px;background:var(--ink);text-decoration:none}
+.sign span{display:block;background:var(--bg);color:var(--ink);border-radius:5px;padding:6px 14px 3px;font-weight:800;font-size:14px;letter-spacing:.09em;text-transform:uppercase;line-height:1.3}
+.title{font-family:var(--display);font-weight:900;font-size:clamp(60px,10.4vw,128px);line-height:.86;letter-spacing:-.045em;margin:24px 0 0}
+.mind{position:relative;display:inline-block}
+.ghost{position:absolute;left:0;top:0;opacity:0;pointer-events:none;color:var(--m);animation:converge 1.7s cubic-bezier(.16,.8,.2,1) .25s both}
+.ghost.g1{--dx:-.07em;--dy:-.06em} .ghost.g2{--dx:.05em;--dy:-.03em} .ghost.g3{--dx:-.04em;--dy:.05em} .ghost.g4{--dx:.08em;--dy:.04em}
+@keyframes converge{0%{opacity:.62;transform:translate(var(--dx),var(--dy))}70%{opacity:.3}100%{opacity:0;transform:translate(0,0)}}
+.subtitle{font-weight:650;font-size:clamp(21px,2.5vw,29px);line-height:1.2;letter-spacing:-.012em;margin:18px 0 0;max-width:26ch;text-wrap:balance}
+.authors{margin-top:28px;font-size:16.5px;line-height:1.6;font-weight:600;max-width:38em}
+.authors .a{white-space:nowrap}
+.authors sup{font-family:var(--mono);font-size:.66em;font-weight:500;color:var(--muted);margin-left:1px}
+.affil{display:block;margin-top:4px;font-size:14.5px;font-weight:400;color:var(--muted)}
+.lede{margin-top:22px;font-size:19px;line-height:1.5;color:var(--ink-2);max-width:44ch}
+.btns{margin-top:26px;display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px 8px;border:1.5px solid var(--ink);border-radius:7px;font-weight:700;font-size:15px;line-height:1.2;text-decoration:none;color:var(--ink);background:transparent;cursor:pointer}
+.btn:hover{background:var(--ink);color:var(--bg)}
+.btn--primary{background:var(--ink);color:var(--bg)}
+.btn--primary:hover{background:var(--ink-2);border-color:var(--ink-2)}
+.btn--soon{border-style:dashed;border-color:var(--line-2);color:var(--muted);cursor:default}
+.btn--soon:hover{background:transparent;color:var(--muted)}
+.btn small{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase}
+.btn svg{width:16px;height:16px;flex:none}
+
+/* ---------- monitor (hero) ---------- */
+.monitor{background:var(--monitor);border:1px solid var(--monitor-line);border-radius:14px;padding:14px;box-shadow:0 30px 60px -30px var(--shadow);margin:0}
+.mon-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-family:var(--mono);font-size:12px;letter-spacing:.03em;color:var(--on-monitor-muted);padding:0 2px 10px}
+.mon-head b{font-weight:600;color:var(--on-monitor)}
+.mon-head span:first-child{min-width:0}
+.mon-head span:last-child{white-space:nowrap}
+.screen{position:relative;border-radius:8px;overflow:hidden;background:var(--monitor-2);aspect-ratio:16/9;max-width:100%}
+.screen img{width:100%;height:100%;object-fit:cover}
+.screen .tag{position:absolute;top:8px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;line-height:1;padding:5px 7px 4px;border-radius:4px;background:var(--overlay);color:var(--on-monitor)}
+.screen .tag.l{left:8px} .screen .tag.r{right:8px}
+.mbars{display:grid;gap:8px;margin-top:14px}
+.mb{display:grid;grid-template-columns:minmax(0,108px) minmax(0,1fr) 40px;align-items:center;gap:10px;font-size:14px}
+.mb-l{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--on-monitor-2);white-space:nowrap}
+.key{width:9px;height:9px;border-radius:2px;background:var(--m);flex:none}
+.mb-track{height:10px;background:var(--monitor-2);border-radius:0 3px 3px 0}
+.mb-fill{display:block;height:100%;width:calc(var(--w,0) * 100%);background:var(--m);border-radius:0 3px 3px 0;transition:width .75s cubic-bezier(.2,.7,.2,1)}
+.mb-v{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;color:var(--on-monitor);font-size:13.5px}
+.lead{margin:14px 0 0;padding:12px 2px 0;border-top:1px solid var(--monitor-line);min-height:7.4em}
+.lead .k{display:block;font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--on-monitor-muted);margin-bottom:5px}
+.lead q{display:block;font-size:15.5px;line-height:1.45;font-weight:var(--fw,600);transition:font-weight .6s}
+.lead .u{display:block;font-size:15.5px;line-height:1.45;color:var(--on-monitor-2)}
+.mon-ctrl{display:flex;align-items:center;gap:12px;margin-top:12px}
+.stages{display:flex;gap:6px;flex:1;min-width:0}
+.stage-btn{flex:1;min-width:0;position:relative;background:transparent;border:0;padding:12px 0 2px;text-align:left;cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--on-monitor-muted);white-space:nowrap}
+.stage-btn::before,.stage-btn .prog{content:"";position:absolute;left:0;top:0;height:4px;border-radius:2px}
+.stage-btn::before{right:0;background:var(--monitor-line)}
+.stage-btn .prog{width:0;background:var(--on-monitor);transition:width .35s linear}
+.stage-btn[aria-selected="true"]{color:var(--on-monitor)}
+.icon-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--monitor-line);background:var(--monitor-2);color:var(--on-monitor);border-radius:7px;padding:7px 11px 6px;font-size:13px;font-weight:600;cursor:pointer;line-height:1;white-space:nowrap}
+.icon-btn:hover{border-color:var(--on-monitor-muted)}
+.icon-btn svg{width:12px;height:12px}
+
+/* ---------- headline numbers ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1.5px solid var(--ink);margin-top:clamp(40px,5vw,60px)}
+.stat{padding:18px 20px 2px 0;min-width:0}
+.stat + .stat{padding-left:20px;border-left:1px solid var(--line)}
+.stat .n{font-weight:800;font-size:clamp(32px,3.6vw,44px);line-height:1;letter-spacing:-.025em}
+.stat .n small{font-size:.5em;font-weight:700;letter-spacing:0;margin-left:2px}
+.stat .l{margin-top:10px;font-size:14.5px;line-height:1.42;color:var(--muted);max-width:30ch}
+@media (max-width:860px){
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stat:nth-child(3){padding-left:0;border-left:0}
+  .stat:nth-child(n+3){border-top:1px solid var(--line);margin-top:16px}
+}
+
+/* ---------- sections ---------- */
+.section{padding-block:clamp(56px,7.5vw,96px)}
+.section + .section{border-top:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:12.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+h2{font-family:var(--display);font-weight:800;font-size:clamp(32px,4.4vw,52px);line-height:1.02;letter-spacing:-.03em;margin:0;max-width:21ch;text-wrap:balance}
+h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.sec-lede{font-size:19px;line-height:1.55;color:var(--ink-2);max-width:62ch;margin-top:18px}
+.prose{display:grid;gap:14px;max-width:62ch;margin-top:18px;color:var(--ink-2)}
+.prose p{font-size:17.5px}
+.sub{margin-top:clamp(56px,7vw,88px)}
+.sub > p{margin-top:12px;max-width:62ch;color:var(--ink-2)}
+.cap{font-size:14px;line-height:1.5;color:var(--muted);max-width:76ch}
+.cap b{color:var(--ink);font-weight:700}
+
+/* ---------- figures from the paper ---------- */
+.paradigms{display:grid;grid-template-columns:minmax(0,.93fr) minmax(0,2.02fr);gap:16px;margin-top:40px}
+@media (max-width:760px){.paradigms{grid-template-columns:minmax(0,1fr)}}
+.pfig{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.pfig img{background:var(--figure);border-radius:6px;width:100%;height:auto}
+.pfig figcaption{font-size:14.5px;line-height:1.45;color:var(--muted);padding:0 2px}
+.pfig figcaption b{color:var(--ink)}
+.wide-fig{margin:28px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:clamp(10px,2vw,18px)}
+.wide-fig img{background:var(--figure);border-radius:6px;width:100%;height:auto}
+.wide-fig figcaption{margin-top:12px}
+
+/* ---------- maths ---------- */
+.eq{font-family:var(--math);font-size:19px;line-height:1.5;color:var(--ink);white-space:nowrap;overflow-x:auto;padding:4px 0 6px}
+.eq i{font-style:italic}
+.eq sub{font-size:.66em}
+.eq--lg{font-size:clamp(20px,2.4vw,26px);margin-top:26px}
+.ss{display:inline-flex;flex-direction:column;vertical-align:.62em;line-height:1.02;font-size:.66em;margin-left:.04em}
+.ss sup,.ss sub{font-size:1em;line-height:1.02;vertical-align:baseline;position:static}
+.op{padding-inline:.18em}
+
+/* ---------- method steps ---------- */
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:44px;border-top:1.5px solid var(--ink)}
+.step{padding:22px 24px 4px 0;min-width:0;display:flex;flex-direction:column}
+.step + .step{padding-left:24px;border-left:1px solid var(--line)}
+.step .k{font-family:var(--mono);font-size:12.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.step h3{margin-top:10px}
+.step p{font-size:16px;line-height:1.55;color:var(--ink-2);margin-top:10px}
+.step .eq{margin-top:auto;padding-top:18px}
+@media (max-width:900px){
+  .steps{grid-template-columns:minmax(0,1fr)}
+  .step + .step{padding-left:0;border-left:0;border-top:1px solid var(--line)}
+}
+
+/* ---------- resampling demo ---------- */
+.rs-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(24px,4vw,56px);align-items:start;margin-top:22px}
+@media (max-width:900px){.rs-grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+.seg{display:inline-flex;flex-wrap:wrap;gap:2px;padding:3px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface)}
+.seg button{border:0;background:transparent;color:var(--muted);font-size:14px;font-weight:650;padding:7px 12px 5px;border-radius:6px;cursor:pointer;line-height:1.3}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.rs-rows{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:10px}
+.rs-row{display:grid;grid-template-columns:44px minmax(0,1fr) 46px;gap:12px;align-items:center}
+.rs-h{font-family:var(--math);font-style:italic;font-size:20px;line-height:1;white-space:nowrap}
+.rs-h sup{font-style:normal;font-size:.62em}
+.rs-track{height:12px;background:var(--chip);border-radius:0 3px 3px 0}
+.rs-fill{display:block;height:100%;width:calc(var(--w,0) * 100%);background:var(--ink);border-radius:0 3px 3px 0;transition:width .6s cubic-bezier(.2,.7,.2,1)}
+.rs-row.is-new .rs-fill{background:var(--bar-mid)}
+.rs-w{font-family:var(--mono);font-size:13.5px;text-align:right;font-variant-numeric:tabular-nums}
+.rs-cap{margin-top:16px;min-height:3em}
+
+/* ---------- maneuver legend ---------- */
+.mans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-top:26px;border-top:1px solid var(--line)}
+.man{padding:16px 18px 4px 0;min-width:0}
+.man + .man{padding-left:18px;border-left:1px solid var(--line)}
+.man b{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:750}
+.man b .key{width:12px;height:12px;border-radius:3px}
+.man span{display:block;margin-top:6px;font-size:15px;line-height:1.45;color:var(--muted)}
+@media (max-width:820px){
+  .mans{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .man:nth-child(3){padding-left:0;border-left:0}
+  .man:nth-child(n+3){border-top:1px solid var(--line);margin-top:12px}
+}
+
+/* ---------- timing diagram ---------- */
+.timing{margin-top:26px;overflow-x:auto}
+.timing svg{display:block;min-width:660px;width:100%;height:auto}
+.td-row{font-family:var(--sans);font-size:15px;font-weight:700;fill:var(--ink)}
+.td-sub{font-family:var(--mono);font-size:11.5px;fill:var(--muted)}
+.td-r{fill:var(--ink)}
+.td-rl{font-family:var(--mono);font-size:12px;fill:var(--bg)}
+.td-c{fill:var(--chip);stroke:var(--line-2);stroke-width:1}
+.td-cl{font-family:var(--math);font-style:italic;font-size:13px;fill:var(--ink-2)}
+.td-axis{stroke:var(--line-2);stroke-width:1}
+.td-tick{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+.td-link{fill:none;stroke:var(--ink-2);stroke-width:1.2;stroke-dasharray:3 3}
+.td-arrow{fill:var(--ink-2)}
+.td-play{stroke:var(--ink);stroke-width:1.5;animation:sweep 6s linear infinite}
+@keyframes sweep{from{transform:translateX(0)}to{transform:translateX(820px)}}
+
+/* ---------- horizontal bar charts ---------- */
+/* bars are drawn inside .hb-plot, which leaves 104px on the right for value labels */
+.hbar{margin-top:18px;display:grid;gap:9px;position:relative}
+.hb-body{display:grid;gap:9px}
+.hb-row{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr);gap:14px;align-items:center;min-height:24px;border-radius:5px}
+.hb-label{font-size:14.5px;line-height:1.25;color:var(--ink-2);overflow-wrap:anywhere}
+.hb-label .tagd{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--muted);margin-left:6px;white-space:nowrap}
+.hb-row.is-ours .hb-label{color:var(--ink);font-weight:750}
+.hb-track{position:relative;height:24px}
+.hb-plot{position:absolute;left:0;top:0;bottom:0;right:104px}
+.hb-gl{position:absolute;top:-5px;bottom:-5px;width:1px;background:var(--line)}
+.hbar{--hb-bg:var(--bg)} .chart-card .hbar{--hb-bg:var(--surface)}
+.hb-ref{position:absolute;top:-6px;bottom:-6px;width:0;border-left:1.5px dashed var(--ink-2)}
+.hb-bar{position:absolute;left:0;top:6px;height:12px;width:calc(var(--v) * 100%);background:var(--bar-other);border-radius:0 4px 4px 0;transition:width .5s cubic-bezier(.2,.7,.2,1)}
+.hb-row.is-mid .hb-bar{background:var(--bar-mid)}
+.hb-row.is-ours .hb-bar{background:var(--ink)}
+.hb-val{position:absolute;top:2px;left:calc(var(--v) * 100% + 4px);padding:0 4px;background:var(--hb-bg);border-radius:3px;font-family:var(--mono);font-size:12.5px;line-height:20px;color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums;transition:left .5s cubic-bezier(.2,.7,.2,1)}
+.hb-row:hover .hb-val,.hb-row:focus-visible .hb-val{background:var(--chip)}
+.hb-row.is-ours .hb-val{color:var(--ink);font-weight:600}
+.hb-row:hover,.hb-row:focus-visible{background:var(--chip)}
+.hb-axis{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr);gap:14px}
+.hb-axis .ticks{position:relative;height:18px;margin-right:104px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.hb-axis .ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.hb-axis .ticks span:first-child{transform:none}
+@media (max-width:640px){
+  .hb-row,.hb-axis{grid-template-columns:minmax(0,1fr)}
+  .hb-row{gap:2px}
+  .hb-axis > span:first-child{display:none}
+}
+
+/* ---------- dark band: closed-loop cases ---------- */
+.band{background:var(--band);padding-block:clamp(64px,9vw,112px)}
+.band h2,.band h3{color:var(--on-monitor)}
+.band .eyebrow{color:var(--on-monitor-muted)}
+.band .sec-lede{color:var(--on-monitor-2)}
+.lane-mark{height:3px;margin-bottom:clamp(40px,6vw,64px);background:repeating-linear-gradient(90deg,var(--on-monitor-muted) 0 36px,transparent 36px 64px);opacity:.45}
+.tabs{display:flex;flex-wrap:wrap;gap:4px 22px;margin-top:34px;border-bottom:1px solid var(--monitor-line)}
+.tab{background:transparent;border:0;padding:10px 0 9px;font-size:15.5px;font-weight:650;color:var(--on-monitor-muted);cursor:pointer;position:relative;white-space:nowrap}
+.tab:hover{color:var(--on-monitor)}
+.tab[aria-selected="true"]{color:var(--on-monitor)}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;border-radius:2px 2px 0 0;background:var(--on-monitor)}
+.explorer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:clamp(22px,4vw,48px);margin-top:28px;align-items:start}
+@media (max-width:960px){.explorer{grid-template-columns:minmax(0,1fr)}}
+.ex-left{min-width:0}
+@media (min-width:961px){.ex-left{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px)}}
+.ex-meta{font-size:15.5px;color:var(--on-monitor-2);margin-top:14px}
+.ex-meta b{color:var(--on-monitor);font-weight:700}
+.strip{display:flex;gap:10px;margin-top:14px}
+.strip-stage{min-width:0;display:flex;flex-direction:column;gap:6px}
+.strip-t{font-family:var(--mono);font-size:11.5px;color:var(--on-monitor-muted);white-space:nowrap}
+.strip-stage.is-on .strip-t{color:var(--on-monitor)}
+.strip-frames{display:flex;gap:3px}
+.thumb{flex:1 1 0;min-width:0;padding:0;border:0;background:var(--monitor-2);border-radius:3px;overflow:hidden;cursor:pointer;aspect-ratio:16/9;opacity:.5;outline-offset:2px;transition:opacity .2s}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb:hover{opacity:.85}
+.thumb[aria-current="true"]{opacity:1;box-shadow:0 0 0 2px var(--on-monitor)}
+.ex-ctrl{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.ex-right{min-width:0}
+.ex-step{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-family:var(--mono);font-size:12.5px;color:var(--on-monitor-muted);padding-bottom:10px;border-bottom:1px solid var(--monitor-line)}
+.ex-step b{color:var(--on-monitor);font-weight:600;font-size:14px}
+.hyps{list-style:none;margin:0;padding:0}
+.hyp{display:grid;grid-template-columns:minmax(0,1fr) 46px;gap:4px 14px;padding:13px 0 12px;border-bottom:1px solid var(--monitor-line)}
+.hyp-top{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--on-monitor-muted)}
+.hyp-top .mchip{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);font-size:13px;letter-spacing:0;font-weight:700;color:var(--on-monitor-2)}
+.hyp-w{grid-row:1 / span 2;grid-column:2;align-self:start;text-align:right;font-family:var(--mono);font-size:15px;font-variant-numeric:tabular-nums;color:var(--on-monitor);padding-top:1px}
+.hyp-text{font-size:16px;line-height:1.45;font-weight:var(--fw,400);opacity:var(--o,1);transition:font-weight .65s cubic-bezier(.2,.7,.2,1),opacity .65s}
+.hyp-bar{grid-column:1 / -1;height:4px;background:var(--monitor-2);border-radius:2px;margin-top:6px}
+.hyp-bar span{display:block;height:100%;width:calc(var(--w,0) * 100%);background:var(--m);border-radius:2px;transition:width .65s cubic-bezier(.2,.7,.2,1)}
+.action{margin-top:18px}
+.action .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--on-monitor-muted)}
+.stack{display:flex;gap:2px;height:14px;margin-top:8px}
+.stack span{height:100%;background:var(--m)}
+.stack span:first-child{border-radius:3px 0 0 3px} .stack span:last-child{border-radius:0 3px 3px 0}
+.stack span:only-child{border-radius:3px}
+.stack-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--on-monitor-2)}
+.stack-legend li{display:flex;align-items:center;gap:7px}
+.stack-legend b{font-family:var(--mono);font-weight:500;color:var(--on-monitor)}
+.ex-note{margin-top:16px;font-size:15.5px;line-height:1.5;color:var(--on-monitor-2)}
+.on-dark .icon-btn{font-size:13.5px}
+
+/* belief dynamics (small multiples) */
+.dyn{margin-top:clamp(56px,7vw,80px);position:relative}
+.dyn > p{margin-top:12px;max-width:66ch;color:var(--on-monitor-2)}
+.dyn-legend{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:18px;font-size:13.5px;color:var(--on-monitor-2)}
+.dyn-legend span{display:inline-flex;align-items:center;gap:8px}
+.dyn-legend i{display:inline-block;width:18px;height:0;border-top:2px solid var(--on-monitor-muted)}
+.dyn-legend i.sel{border-top-color:var(--on-monitor);border-top-width:2.5px}
+.dyn-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:14px}
+@media (max-width:860px){.dyn-grid{grid-template-columns:minmax(0,1fr)}}
+.dyn-panel{background:var(--monitor);border:1px solid var(--monitor-line);border-radius:10px;padding:12px 10px 6px;position:relative;min-width:0}
+.dyn-panel h4{margin:0 4px 4px;font-size:14px;font-weight:700;color:var(--on-monitor)}
+.dyn-panel h4 span{font-family:var(--math);font-style:italic;font-weight:400;color:var(--on-monitor-muted);margin-left:6px}
+.dyn svg{display:block;width:100%;height:auto;overflow:visible;touch-action:pan-y}
+.dg{stroke:var(--monitor-line);stroke-width:1}
+.dt{font-family:var(--mono);font-size:10.5px;fill:var(--on-monitor-muted)}
+.dref{stroke:var(--on-monitor-muted);stroke-width:1;stroke-dasharray:4 4}
+.dl{fill:none;stroke:var(--dyn-other);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+.measuring,.measuring *{transition:none!important}
+.dl.sel{stroke:var(--on-monitor);stroke-width:2.4}
+.ddot{fill:var(--on-monitor);stroke:var(--monitor);stroke-width:2}
+.dcross{stroke:var(--on-monitor-muted);stroke-width:1}
+.tip{position:absolute;z-index:5;pointer-events:none;min-width:150px;background:var(--monitor-2);border:1px solid var(--monitor-line);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.5;color:var(--on-monitor-2);box-shadow:0 12px 30px -12px rgba(0,0,0,.5)}
+.tip b{font-family:var(--mono);color:var(--on-monitor);font-weight:600}
+.tip .t{font-family:var(--mono);font-size:11px;color:var(--on-monitor-muted);margin-bottom:2px}
+.tip .row{display:flex;justify-content:space-between;gap:14px}
+.tip .row.sel{color:var(--on-monitor)}
+
+/* ---------- results ---------- */
+.controls{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-top:30px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px;color:var(--muted);margin-left:auto}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.lg-dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+.lg-dot.base{border:2px solid var(--dot-base);background:var(--surface)}
+.lg-dot.ours{background:var(--ink)}
+.lg-bar{width:16px;height:9px;border-radius:0 2px 2px 0;display:inline-block;background:var(--bar-other)}
+.lg-bar.mid{background:var(--bar-mid)} .lg-bar.ours{background:var(--ink)}
+.chart-card{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:clamp(14px,2.4vw,24px);position:relative}
+.db-head,.db-row{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr) 64px;gap:16px;align-items:center}
+.db-head .ticks{position:relative;height:16px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.db-head .ticks span{position:absolute;transform:translateX(-50%)}
+.db-head .ticks span:first-child{transform:none} .db-head .ticks span:last-child{transform:translateX(-100%)}
+.db-head .dh{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right}
+.db-rows{display:grid;margin-top:6px}
+.db-row{min-height:38px;border-radius:6px}
+.db-row:hover,.db-row:focus-visible{background:var(--chip)}
+.db-row.is-total{margin-top:6px;border-top:1px solid var(--line);border-radius:0;padding-top:9px}
+.db-label{font-size:15px;line-height:1.25;color:var(--ink-2);overflow-wrap:anywhere}
+.db-row.is-total .db-label{font-weight:750;color:var(--ink)}
+.db-track{position:relative;align-self:stretch;min-height:30px;background-image:linear-gradient(var(--line),var(--line)),linear-gradient(var(--line),var(--line)),linear-gradient(var(--line),var(--line)),linear-gradient(var(--line),var(--line)),linear-gradient(var(--line),var(--line));background-size:1px 100%;background-repeat:no-repeat;background-position:0 0,25% 0,50% 0,75% 0,100% 0}
+.db-conn{position:absolute;top:50%;height:2px;margin-top:-1px;background:var(--line-2);transition:left .5s,width .5s}
+.db-dot{position:absolute;top:50%;width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-radius:50%;transition:left .5s cubic-bezier(.2,.7,.2,1)}
+.db-dot.base{background:var(--surface);border:2px solid var(--dot-base)}
+.db-dot.ours{background:var(--ink);box-shadow:0 0 0 2px var(--surface)}
+.db-delta{font-family:var(--mono);font-size:13.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+.db-delta.neg{color:var(--muted)}
+@media (max-width:680px){
+  .db-head,.db-row{grid-template-columns:minmax(0,1fr) 58px;grid-template-areas:"label delta" "track track";gap:2px 12px}
+  .db-head{grid-template-areas:"ticks ticks"}
+  .db-head .sp,.db-head .dh{display:none}
+  .db-head .ticks{grid-area:ticks}
+  .db-label{grid-area:label} .db-track{grid-area:track} .db-delta{grid-area:delta}
+}
+.chart-note{margin-top:14px;font-size:14.5px;line-height:1.5;color:var(--muted);max-width:76ch;min-height:1.5em}
+.chart-note b{color:var(--ink)}
+.tv{margin-top:14px}
+.tv summary{cursor:pointer;font-size:14px;font-weight:650;color:var(--ink-2);width:max-content}
+.tv-scroll{overflow-x:auto;margin-top:10px}
+.tv table{border-collapse:collapse;font-size:13.5px;min-width:520px;width:100%}
+.tv th,.tv td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tv th:first-child,.tv td:first-child{text-align:left;white-space:normal}
+.tv th{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--muted)}
+.on-dark .tv summary{color:var(--on-monitor-2)}
+.on-dark .tv th,.on-dark .tv td{border-bottom-color:var(--monitor-line)}
+.on-dark .tv th{color:var(--on-monitor-muted)}
+.charttip{position:absolute;z-index:5;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:8px;padding:8px 11px;font-size:13px;line-height:1.45;max-width:260px;box-shadow:0 12px 28px -12px var(--shadow)}
+.charttip b{font-family:var(--mono);font-weight:600}
+.charttip .t{opacity:.75;font-size:12px}
+
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:clamp(48px,6vw,72px);border-top:1.5px solid var(--ink)}
+.fact{padding:20px 22px 4px 0;min-width:0}
+.fact + .fact{padding-left:22px;border-left:1px solid var(--line)}
+.fact .n{font-weight:800;font-size:clamp(30px,3.2vw,40px);line-height:1;letter-spacing:-.02em}
+.fact .n small{font-size:.5em;font-weight:700;margin-left:2px}
+.fact .l{margin-top:10px;font-size:15px;line-height:1.48;color:var(--muted)}
+.fact .l b{color:var(--ink);font-weight:700}
+@media (max-width:960px){
+  .facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fact:nth-child(3){padding-left:0;border-left:0}
+  .fact:nth-child(n+3){border-top:1px solid var(--line);margin-top:16px}
+}
+@media (max-width:520px){
+  .facts{grid-template-columns:minmax(0,1fr)}
+  .fact + .fact{padding-left:0;border-left:0;border-top:1px solid var(--line);margin-top:16px}
+}
+
+/* ---------- limitations ---------- */
+.limits{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(24px,5vw,72px);align-items:start}
+@media (max-width:860px){.limits{grid-template-columns:minmax(0,1fr)}}
+.limit-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.limit-list li{padding:14px 0;border-bottom:1px solid var(--line);font-size:17px;line-height:1.5;color:var(--ink-2)}
+.limit-list li b{color:var(--ink)}
+
+/* ---------- cite + footer ---------- */
+.cite-grid{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);gap:clamp(24px,5vw,72px);align-items:start}
+@media (max-width:860px){.cite-grid{grid-template-columns:minmax(0,1fr)}}
+.res{list-style:none;margin:20px 0 0;padding:0;border-top:1px solid var(--line)}
+.res li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);font-size:16.5px}
+.res li a{font-weight:700}
+.res .soon{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--muted);text-transform:uppercase}
+.bib{position:relative;background:var(--monitor);color:var(--on-monitor);border-radius:12px;border:1px solid var(--monitor-line)}
+.bib pre{margin:0;padding:22px 20px 20px;overflow-x:auto;font-family:var(--mono);font-size:13.5px;line-height:1.6}
+.bib-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px 10px 20px;border-bottom:1px solid var(--monitor-line);font-family:var(--mono);font-size:12px;color:var(--on-monitor-muted)}
+.copy-msg{font-family:var(--mono);font-size:12px;color:var(--on-monitor-2);margin-right:6px}
+.foot{border-top:1px solid var(--line);padding-block:36px 48px;font-size:14px;line-height:1.55;color:var(--muted)}
+.foot .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px 48px}
+@media (max-width:760px){.foot .wrap{grid-template-columns:minmax(0,1fr)}}
+.foot b{color:var(--ink)}
+
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .ghost{display:none}
+  .td-play{display:none}
+}
+</style>
+<style>[hidden]{display:none!important}</style>
+</head>
+<body>
+<nav class="nav" aria-label="Sections">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="DriveMind, back to top">
+      <svg viewBox="0 0 32 32" aria-hidden="true" fill="none" stroke-linecap="round">
+        <path d="M3 6.5C11 6.5 13 16 21 16" style="stroke:var(--stop)" stroke-width="2.6"/>
+        <path d="M3 12.2C11 12.2 13 16 21 16" style="stroke:var(--decel)" stroke-width="2.6"/>
+        <path d="M3 19.8C11 19.8 13 16 21 16" style="stroke:var(--go)" stroke-width="2.6"/>
+        <path d="M3 25.5C11 25.5 13 16 21 16" style="stroke:var(--lane)" stroke-width="2.6"/>
+        <path d="M20 16H29.5" style="stroke:var(--ink)" stroke-width="3.4"/>
+      </svg>
+      <span>DriveMind</span>
+    </a>
+    <div class="nav-links">
+      <a href="#idea">Idea</a>
+      <a href="#method">Method</a>
+      <a href="#examples">Examples</a>
+      <a href="#results">Results</a>
+      <a class="keep" href="#cite">Cite</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <a class="sign" href="https://neurips.cc/Conferences/2026" target="_blank" rel="noopener"><span>NeurIPS 2026</span></a>
+        <h1 class="title">Drive<span class="mind">Mind<span class="ghost g1" data-m="stop" aria-hidden="true">Mind</span><span class="ghost g2" data-m="decel" aria-hidden="true">Mind</span><span class="ghost g3" data-m="go" aria-hidden="true">Mind</span><span class="ghost g4" data-m="lane" aria-hidden="true">Mind</span></span></h1>
+        <p class="subtitle">Mind-Evolving Belief Tracking for Closed-Loop Autonomous Driving</p>
+        <p class="authors">
+          <span class="a">Yan Shi<sup>1</sup></span>,
+          <span class="a">Kehua Chen<sup>1*</sup></span>,
+          <span class="a">Jiarui Qi<sup>1</sup></span>,
+          <span class="a">Yihong Tang<sup>2</sup></span>,
+          <span class="a">Haicheng Liao<sup>3</sup></span>,
+          <span class="a">Yinhai Wang<sup>1*</sup></span>
+          <span class="affil"><sup>1</sup>University of Washington &nbsp;·&nbsp; <sup>2</sup>McGill University &nbsp;·&nbsp; <sup>3</sup>University of Michigan &nbsp;·&nbsp; <span style="white-space:nowrap"><sup>*</sup>Corresponding authors</span></span>
+        </p>
+        <p class="lede">Multimodal LLM drivers usually reason from scratch at every frame and commit to a single reading of the scene. DriveMind keeps several readings alive as weighted hypotheses and lets each new frame reweigh them.</p>
+        <div class="btns">
+          <!-- LINKS: replace href values when the arXiv page and code are public. -->
+          <a class="btn btn--primary" href="static/DriveMind_NeurIPS2026.pdf" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 1.8h5.2L12.6 5v9.2H4z"/><path d="M9 1.8V5.3h3.6"/></svg>
+            Paper
+          </a>
+          <span class="btn btn--soon" title="Link will be added when the preprint is public">arXiv <small>soon</small></span>
+          <span class="btn btn--soon" title="Link will be added when the code is released">Code <small>soon</small></span>
+          <a class="btn" href="#cite">BibTeX</a>
+        </div>
+      </div>
+
+      <figure class="monitor on-dark" id="hero-monitor" aria-label="Belief over four hypotheses as the car approaches an intersection with a cyclist">
+        <div class="mon-head"><span><b>Bench2Drive</b> · left turn, cyclist ahead</span><span data-role="t">t = 7–10</span></div>
+        <div class="screen">
+          <img data-role="frame" src="assets/cases/cyclist/10.jpg" width="366" height="206" alt="Front camera at an intersection, a cyclist crossing from the left">
+          <span class="tag l">CAM_FRONT</span><span class="tag r" data-role="fc">frame 10 / 10</span>
+        </div>
+        <div class="mbars" data-role="bars">
+          <div class="mb" data-m="stop" style="--w:.22"><span class="mb-l"><i class="key"></i>Stop</span><span class="mb-track"><span class="mb-fill"></span></span><span class="mb-v">0.22</span></div>
+          <div class="mb" data-m="decel" style="--w:.78"><span class="mb-l"><i class="key"></i>Decelerate</span><span class="mb-track"><span class="mb-fill"></span></span><span class="mb-v">0.78</span></div>
+          <div class="mb" data-m="go" style="--w:0"><span class="mb-l"><i class="key"></i>Go straight</span><span class="mb-track"><span class="mb-fill"></span></span><span class="mb-v">0.00</span></div>
+          <div class="mb" data-m="lane" style="--w:0"><span class="mb-l"><i class="key"></i>Lane change</span><span class="mb-track"><span class="mb-fill"></span></span><span class="mb-v">0.00</span></div>
+        </div>
+        <div class="lead" data-role="lead" aria-live="polite">
+          <span class="k">Leading hypothesis · Decelerate · 0.78</span>
+          <q style="--fw:740">I need to decelerate because the traffic light is red, a cyclist is actively crossing the intersection, and the navigation command is to turn left, requiring a cautious slowdown before maneuvering.</q>
+        </div>
+        <div class="mon-ctrl">
+          <div class="stages" role="tablist" aria-label="Reasoning steps">
+            <button class="stage-btn" role="tab" aria-selected="false" data-stage="0"><span class="prog" style="width:100%"></span>t = 1–3</button>
+            <button class="stage-btn" role="tab" aria-selected="false" data-stage="1"><span class="prog" style="width:100%"></span>t = 4–6</button>
+            <button class="stage-btn" role="tab" aria-selected="true" data-stage="2"><span class="prog" style="width:100%"></span>t = 7–10</button>
+          </div>
+          <button class="icon-btn" type="button" data-role="play" aria-label="Play">
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5v9l8-4.5z" fill="currentColor"/></svg><span>Play</span>
+          </button>
+        </div>
+      </figure>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><p class="n">81.37</p><p class="l">Driving Score on Bench2Drive, up from 68.50 without belief tracking</p></div>
+      <div class="stat"><p class="n">54.09<small>%</small></p><p class="l">Success rate on the same 220 routes, up from 41.36%</p></div>
+      <div class="stat"><p class="n">+20.5</p><p class="l">Driving Score on oncoming-traffic scenarios, the largest gain of any category</p></div>
+      <div class="stat"><p class="n">57.1<small>ms</small></p><p class="l">Mean control-step latency with asynchronous belief refresh (s = 6), against 177.0 ms when reasoning blocks control</p></div>
+    </div>
+  </div>
+</header>
+
+<main>
+<section class="section" id="idea">
+  <div class="wrap">
+    <h2>One reading per frame commits too early</h2>
+    <div class="prose">
+      <p>Traffic is full of ambiguity. A slowing car may be yielding, preparing to turn, or reacting to an obstacle the ego vehicle cannot see. A pedestrian near the curb may cross, or may keep waiting.</p>
+      <p>Most MLLM-based drivers produce one rationale per frame and act on it. In closed loop, that action shapes the next observation, so a wrong first guess can reinforce itself before the evidence arrives. DriveMind carries a weighted set of hypotheses from frame to frame instead.</p>
+    </div>
+    <div class="paradigms">
+      <figure class="pfig">
+        <img src="assets/fig/paradigm-single.webp" width="900" height="966" loading="lazy" alt="Instance-based framework: input, LLM, chain of thought and motion repeat independently at t and t plus 1">
+        <figcaption><b>Instance-based.</b> One chain of thought per timestep, rebuilt from scratch.</figcaption>
+      </figure>
+      <figure class="pfig">
+        <img src="assets/fig/paradigm-belief.webp" width="1600" height="792" loading="lazy" alt="Mind-evolving framework: the LLM produces K hypotheses at time t, which are propagated to time t plus 1; darker boxes carry more weight">
+        <figcaption><b>Mind-evolving.</b> K hypotheses are propagated over time; darker boxes carry more weight. Both panels from the paper's Figure 1.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="method">
+  <div class="wrap">
+    <p class="eyebrow">Method</p>
+    <h2>A particle filter whose particles are sentences</h2>
+    <p class="sec-lede">The belief is a weighted set of K natural-language hypotheses, each a possible interpretation of the scene, with weights that sum to one. At every reasoning step a vision-language model runs the three moves of a particle filter.</p>
+    <p class="eq eq--lg" aria-label="B sub t equals the set of pairs h t k, w t k for k from 1 to K, with the weights summing to one"><i>ℬ</i><sub><i>t</i></sub> <span class="op">=</span> { ( <i>h</i><span class="ss"><sup><i>k</i></sup><sub><i>t</i></sub></span> , <i>w</i><span class="ss"><sup><i>k</i></sup><sub><i>t</i></sub></span> ) }<span class="ss"><sup><i>K</i></sup><sub><i>k</i>=1</sub></span> ,&emsp; ∑<sub><i>k</i></sub> <i>w</i><span class="ss"><sup><i>k</i></sup><sub><i>t</i></sub></span> <span class="op">=</span> 1</p>
+
+    <div class="steps">
+      <div class="step">
+        <span class="k">1 · Predict</span>
+        <h3>Propagate each hypothesis</h3>
+        <p>The VLM rewrites every hypothesis from the previous hypothesis, the previous action and the new camera frame.</p>
+        <p class="eq"><i>h</i><span class="ss"><sup><i>k</i></sup><sub><i>t</i></sub></span> <span class="op">∼</span> <i>p</i><sub>ℳ</sub>( · | <i>h</i><span class="ss"><sup><i>k</i></sup><sub><i>t</i>−1</sub></span>, <i>a</i><sub><i>t</i>−1</sub>, <i>x</i><sub><i>t</i></sub>, ℋ<sub><i>t</i>−1</sub> )</p>
+      </div>
+      <div class="step">
+        <span class="k">2 · Correct</span>
+        <h3>Reweigh against the evidence</h3>
+        <p>A second VLM pass rates how well each hypothesis fits the current frame on a scale of 1 to 10. The rescaled score updates the weight through an exponential, then the weights are renormalized.</p>
+        <p class="eq"><i>w̃</i><span class="ss"><sup><i>k</i></sup><sub><i>t</i></sub></span> <span class="op">=</span> <i>w</i><span class="ss"><sup><i>k</i></sup><sub><i>t</i>−1</sub></span> · exp( <i>s</i><span class="ss"><sup><i>k</i></sup><sub><i>t</i></sub></span> / <i>β</i> )</p>
+      </div>
+      <div class="step">
+        <span class="k">3 · Resample</span>
+        <h3>Keep the set diverse</h3>
+        <p>When the effective sample size falls below αK, hypotheses are resampled by weight. Near-duplicates, with cosine similarity above 0.9, are regenerated as different readings that still fit the frame.</p>
+        <p class="eq">ESS<sub><i>t</i></sub> <span class="op">=</span> 1 / ∑<sub><i>k</i></sub> ( <i>w</i><span class="ss"><sup><i>k</i></sup><sub><i>t</i></sub></span> )² <span class="op">&lt;</span> <i>αK</i></p>
+      </div>
+    </div>
+
+    <div class="sub">
+      <h3>Resampling without collapse</h3>
+      <div class="rs-grid">
+        <div>
+          <p class="cap" style="font-size:16px;color:var(--ink-2)">Plain resampling would copy the dominant hypothesis until every slot says the same thing. DriveMind keeps the strongest copy, rephrases the others into distinct readings, and so keeps alternatives available for the next frame. Step through the paper's Figure 6.</p>
+        </div>
+        <div class="card" id="resample">
+          <div class="seg" role="group" aria-label="Resampling stage">
+            <button type="button" aria-pressed="true" data-s="0">Before</button>
+            <button type="button" aria-pressed="false" data-s="1">Resampled</button>
+            <button type="button" aria-pressed="false" data-s="2">Rephrased</button>
+          </div>
+          <ol class="rs-rows" aria-live="polite"></ol>
+          <p class="cap rs-cap"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub">
+      <h3>From belief to a maneuver</h3>
+      <p>Each hypothesis also predicts one of four maneuvers. Weighting those predictions by belief gives an interpretable maneuver distribution, which the examples below show. Colour on this page always refers to these four maneuvers.</p>
+      <div class="mans">
+        <div class="man" data-m="stop"><b><i class="key"></i>Stop</b><span>An emergency brake.</span></div>
+        <div class="man" data-m="decel"><b><i class="key"></i>Decelerate</b><span>Cautious slowing for hazards or to yield.</span></div>
+        <div class="man" data-m="go"><b><i class="key"></i>Go straight</b><span>Unimpeded forward progress.</span></div>
+        <div class="man" data-m="lane"><b><i class="key"></i>Lane change</b><span>Lateral moves, including overtaking and choosing a branch at a junction.</span></div>
+      </div>
+    </div>
+
+    <div class="sub" id="fast-slow">
+      <h3>Reason at 2 Hz, steer at 10 Hz</h3>
+      <p>A slow reasoner built on Qwen3-VL-2B updates the belief about twice per second. A fast diffusion controller runs at the 10 Hz control rate and plans eight waypoints, conditioned on a weight-averaged embedding of all hypotheses. Between slow updates the controller reuses the latest belief instead of waiting for the next one.</p>
+      <div class="timing" role="img" aria-label="Timeline of one second. The reasoner runs two belief updates of 120 milliseconds each, starting at 0 and 500 milliseconds. The controller runs ten steps of 45 milliseconds, one every 100 milliseconds, each reading the newest finished belief.">
+        <svg viewBox="0 0 1000 196" aria-hidden="true">
+          <text class="td-row" x="0" y="62">Reasoner</text><text class="td-sub" x="0" y="80">VLM · ~2 Hz</text>
+          <text class="td-row" x="0" y="132">Controller</text><text class="td-sub" x="0" y="150">diffusion · 10 Hz</text>
+          <rect class="td-r" x="150" y="44" width="98.4" height="34" rx="4"/><text class="td-rl" x="160" y="66">update → ℬ₁</text>
+          <rect class="td-r" x="560" y="44" width="98.4" height="34" rx="4"/><text class="td-rl" x="570" y="66">update → ℬ₂</text>
+          <g>
+            <rect class="td-c" x="150" y="114" width="36.9" height="34" rx="4"/><text class="td-cl" x="160" y="136">ℬ₀</text>
+            <rect class="td-c" x="232" y="114" width="36.9" height="34" rx="4"/><text class="td-cl" x="242" y="136">ℬ₀</text>
+            <rect class="td-c" x="314" y="114" width="36.9" height="34" rx="4"/><text class="td-cl" x="324" y="136">ℬ₁</text>
+            <rect class="td-c" x="396" y="114" width="36.9" height="34" rx="4"/><text class="td-cl" x="406" y="136">ℬ₁</text>
+            <rect class="td-c" x="478" y="114" width="36.9" height="34" rx="4"/><text class="td-cl" x="488" y="136">ℬ₁</text>
+            <rect class="td-c" x="560" y="114" width="36.9" height="34" rx="4"/><text class="td-cl" x="570" y="136">ℬ₁</text>
+            <rect class="td-c" x="642" y="114" width="36.9" height="34" rx="4"/><text class="td-cl" x="652" y="136">ℬ₁</text>
+            <rect class="td-c" x="724" y="114" width="36.9" height="34" rx="4"/><text class="td-cl" x="734" y="136">ℬ₂</text>
+            <rect class="td-c" x="806" y="114" width="36.9" height="34" rx="4"/><text class="td-cl" x="816" y="136">ℬ₂</text>
+            <rect class="td-c" x="888" y="114" width="36.9" height="34" rx="4"/><text class="td-cl" x="898" y="136">ℬ₂</text>
+          </g>
+          <path class="td-link" d="M248.4 78 C 248.4 98, 332.5 94, 332.5 108"/><path class="td-arrow" d="M328 106 L337 106 L332.5 113 Z"/>
+          <path class="td-link" d="M658.4 78 C 658.4 98, 742.5 94, 742.5 108"/><path class="td-arrow" d="M738 106 L747 106 L742.5 113 Z"/>
+          <line class="td-axis" x1="150" y1="166" x2="970" y2="166"/>
+          <g class="td-tick">
+            <text x="150" y="186" text-anchor="middle">0</text><text x="232" y="186" text-anchor="middle">100</text><text x="314" y="186" text-anchor="middle">200</text><text x="396" y="186" text-anchor="middle">300</text><text x="478" y="186" text-anchor="middle">400</text><text x="560" y="186" text-anchor="middle">500</text><text x="642" y="186" text-anchor="middle">600</text><text x="724" y="186" text-anchor="middle">700</text><text x="806" y="186" text-anchor="middle">800</text><text x="888" y="186" text-anchor="middle">900</text><text x="970" y="186" text-anchor="end">1000 ms</text>
+          </g>
+          <line class="td-play" x1="150" y1="34" x2="150" y2="160"/>
+        </svg>
+      </div>
+      <p class="cap" style="margin-top:10px">Schematic of one second of asynchronous inference. Block widths use the isolated component latencies for K = 4: 120 ms per belief update and 45 ms per control step. Each control step reads the newest finished belief.</p>
+
+      <h3 style="margin-top:40px;font-size:18px">Mean control-step latency, shared GPU (one RTX A6000)</h3>
+      <div class="hbar" id="latency"></div>
+      <p class="cap" style="margin-top:14px">The dashed line marks 100 ms, one period of the 10 Hz control loop. s is the number of fast control steps between two belief updates. In isolation, a belief update takes 74.0 ms with K = 2, 120.0 ms with K = 4 and 165.5 ms with K = 6; one controller step takes 45.0 ms.</p>
+    </div>
+
+    <figure class="wide-fig">
+      <img src="assets/fig/overview.webp" width="2200" height="1077" loading="lazy" alt="DriveMind overview: (a) an asynchronous loop of hypothesis propagation at 2 Hz and diffusion control at 10 Hz; (b) the VLM updates hypotheses and their weights and outputs a high-level action; (c) the belief evolves across frames and conditions the diffusion planner">
+      <figcaption class="cap"><b>Architecture.</b> (a) The asynchronous fast–slow loop. (b) Hypothesis propagation and weight update in the VLM. (c) The belief evolving across frames and conditioning the diffusion planner. From the paper's Figure 2.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band on-dark" id="examples">
+  <div class="wrap">
+    <div class="lane-mark" aria-hidden="true"></div>
+    <p class="eyebrow">Closed-loop cases · Bench2Drive in CARLA</p>
+    <h2>Watch the belief settle, frame by frame</h2>
+    <p class="sec-lede">Each case shows the camera frames, the four hypotheses and their weights as reported in the paper. Type weight follows belief: a hypothesis grows bolder as the evidence supports it and fades as it loses support.</p>
+
+    <div class="tabs" role="tablist" aria-label="Driving cases" id="case-tabs"></div>
+    <div class="explorer" id="explorer" role="tabpanel">
+      <div class="ex-left">
+        <div class="screen">
+          <img id="ex-frame" alt="" width="400" height="225">
+          <span class="tag l">CAM_FRONT</span><span class="tag r" id="ex-fc"></span>
+        </div>
+        <div class="strip" id="ex-strip"></div>
+        <div class="ex-ctrl">
+          <button class="icon-btn" type="button" id="ex-prev"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M8.5 1.5 3.5 6l5 4.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>Earlier</span></button>
+          <button class="icon-btn" type="button" id="ex-play" aria-label="Play from the first frame"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5v9l8-4.5z" fill="currentColor"/></svg><span>Play</span></button>
+          <button class="icon-btn" type="button" id="ex-next"><span>Later</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3.5 1.5 8.5 6l-5 4.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+        </div>
+        <p class="ex-meta" id="ex-meta"></p>
+      </div>
+      <div class="ex-right">
+        <div class="ex-step"><span>Reasoning step <b id="ex-t"></b></span><span id="ex-fig"></span></div>
+        <ol class="hyps" id="ex-hyps"></ol>
+        <div class="action">
+          <span class="k">Weighted action at the last step</span>
+          <div class="stack" id="ex-stack" role="img"></div>
+          <ul class="stack-legend" id="ex-stack-legend"></ul>
+        </div>
+        <p class="ex-note" id="ex-note"></p>
+      </div>
+    </div>
+
+    <div class="dyn" id="dyn">
+      <h3>How fast belief concentrates</h3>
+      <p>Per-step belief statistics for four of the scenarios, read from the paper's Figure 3. Entropy falls as the scene becomes less ambiguous and the leading weight climbs. The night scene stays uncertain, with its leading weight levelling off near 0.6.</p>
+      <div class="dyn-legend" id="dyn-legend"></div>
+      <div class="dyn-grid" id="dyn-grid"></div>
+      <details class="tv"><summary>Show as table</summary><div class="tv-scroll" id="dyn-table"></div></details>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="results">
+  <div class="wrap">
+    <p class="eyebrow">Bench2Drive · 220 routes · closed loop</p>
+    <h2>The largest gains come where intent is ambiguous</h2>
+    <p class="sec-lede">Against the same VLM and diffusion controller without belief tracking, DriveMind raises the Driving Score in all nine scenario categories. The biggest gains are in oncoming traffic and at unsignalized intersections, where the car has to infer what other road users will do.</p>
+
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Scenario set" id="db-set">
+        <button type="button" aria-pressed="true" data-v="categories">Scenario categories</button>
+        <button type="button" aria-pressed="false" data-v="longtail">Long-tail scenarios</button>
+      </div>
+      <div class="seg" role="group" aria-label="Metric" id="db-metric">
+        <button type="button" aria-pressed="true" data-v="ds">Driving Score</button>
+        <button type="button" aria-pressed="false" data-v="sr">Success rate</button>
+      </div>
+      <div class="legend"><span><i class="lg-dot base"></i>Without belief tracking</span><span><i class="lg-dot ours"></i>DriveMind</span></div>
+    </div>
+    <div class="chart-card" id="dumbbell">
+      <div class="db-head"><span class="sp"></span><div class="ticks"><span style="left:0">0</span><span style="left:25%">25</span><span style="left:50%">50</span><span style="left:75%">75</span><span style="left:100%">100</span></div><span class="dh" id="db-dh">Δ DS</span></div>
+      <div class="db-rows" id="db-rows"></div>
+      <p class="chart-note" id="db-note"></p>
+      <details class="tv"><summary>Show as table</summary><div class="tv-scroll" id="db-table"></div></details>
+    </div>
+
+    <div class="sub">
+      <h3>Against published methods</h3>
+      <div class="controls">
+        <div class="seg" role="group" aria-label="Metric" id="lb-metric">
+          <button type="button" aria-pressed="true" data-v="ds">Driving Score</button>
+          <button type="button" aria-pressed="false" data-v="sr">Success rate</button>
+        </div>
+        <div class="legend"><span><i class="lg-bar ours"></i>DriveMind</span><span><i class="lg-bar mid"></i>Without belief tracking</span><span><i class="lg-bar"></i>Published methods</span></div>
+      </div>
+      <div class="chart-card">
+        <div class="hbar" id="leaderboard"></div>
+        <p class="chart-note">“dist.” marks methods trained with distillation. DriveMind values are means over multiple runs ± one standard deviation.</p>
+        <details class="tv"><summary>Show as table, with efficiency and comfort</summary><div class="tv-scroll" id="lb-table"></div></details>
+      </div>
+    </div>
+
+    <div class="facts">
+      <div class="fact"><p class="n">70.00<small>%</small></p><p class="l"><b>Give-way</b>, up from 30.00%. Overtaking rises from 57.78% to 91.11%. Across the five abilities, DriveMind has the highest mean in the comparison, 58.17%.</p></div>
+      <div class="fact"><p class="n">93.0<small>%</small></p><p class="l"><b>Maneuver accuracy</b> with VLM-scored weights, against 77.9% with uniform weights and 64.4% with random ones.</p></div>
+      <div class="fact"><p class="n">K = 4</p><p class="l"><b>Hypotheses per step.</b> Four give 81.37 DS and 54.09% SR. Two, which start from only going straight and stopping, give 70.00 DS and 48.00% SR.</p></div>
+      <div class="fact"><p class="n">81.0</p><p class="l"><b>PDMS on NAVSIM</b>, up from 78.2 without belief. NAVSIM is not reactive, so belief tracking has less room to help than in closed loop.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="limits">
+  <div class="wrap limits">
+    <div>
+      <h2>Limitations</h2>
+      <p class="sec-lede" style="font-size:17.5px">The failures we see come mostly from belief updates that arrive too late or from too little visual evidence.</p>
+    </div>
+    <ul class="limit-list">
+      <li><b>Very dense interactions</b> with many agents at once.</li>
+      <li><b>Sudden, fast objects.</b> An agent that appears between two slow updates meets a controller still conditioned on the previous belief.</li>
+      <li><b>Long occlusions</b> that leave too little evidence to correct the belief.</li>
+      <li><b>The scorer can be wrong.</b> It may favour visually unsupported or outdated hypotheses and delay the correction.</li>
+      <li><b>Fixed K and update rate.</b> Adapting both to scene complexity, and adding other agents’ intentions to the hypothesis space, are next steps.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="section" id="cite">
+  <div class="wrap cite-grid">
+    <div>
+      <h2>Paper and citation</h2>
+      <ul class="res">
+        <li><a href="static/DriveMind_NeurIPS2026.pdf" target="_blank" rel="noopener">Paper (PDF)</a><span class="soon">NeurIPS 2026</span></li>
+        <li><span>arXiv</span><span class="soon">Coming soon</span></li>
+        <li><span>Code</span><span class="soon">Coming soon</span></li>
+      </ul>
+    </div>
+    <div class="bib on-dark">
+      <div class="bib-bar"><span>BibTeX</span><span><span class="copy-msg" id="copy-msg" aria-live="polite"></span><button class="icon-btn" type="button" id="copy-bib"><svg viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3.5" y="3.5" width="7" height="7" rx="1.2"/><path d="M8.5 3.5v-1.3c0-.6-.5-1-1-1H2.2c-.6 0-1 .4-1 1v5.3c0 .5.4 1 1 1h1.3"/></svg><span>Copy</span></button></span></div>
+<pre id="bibtex">@inproceedings{shi2026drivemind,
+  title     = {DriveMind: Mind-Evolving Belief Tracking for
+               Closed-Loop Autonomous Driving},
+  author    = {Shi, Yan and Chen, Kehua and Qi, Jiarui and
+               Tang, Yihong and Liao, Haicheng and Wang, Yinhai},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2026}
+}</pre>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p><b>DriveMind</b>, NeurIPS 2026<br>University of Washington<br>McGill University<br>University of Michigan</p>
+    <p>Camera frames come from CARLA scenarios in Bench2Drive, as shown in the paper’s figures. Set in Overpass, an open-source typeface inspired by Highway Gothic, the lettering of US road signs.</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+  const RM = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  function el(tag, props = {}, ...kids) {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (v == null) continue;
+      if (k === "class") n.className = v;
+      else if (k === "text") n.textContent = v;
+      else if (k === "style") n.setAttribute("style", v);
+      else n.setAttribute(k, v);
+    }
+    for (const c of kids.flat()) if (c != null) n.append(c);
+    return n;
+  }
+  const f2 = v => v.toFixed(2);
+  const pad = n => String(n).padStart(2, "0");
+
+  /* ------------------------------------------------------------------
+     DATA. Every number below is copied from the paper.
+     ------------------------------------------------------------------ */
+  const MAN = [
+    { key: "stop",  label: "Stop" },
+    { key: "decel", label: "Decelerate" },
+    { key: "go",    label: "Go straight" },
+    { key: "lane",  label: "Lane change" }
+  ];
+
+  // Qualitative cases (Figures 4, 7, 8, 9, 10). Hypothesis k always predicts maneuver k.
+  // f = frame numbers shown in that stage, w = belief weights, h = hypothesis text.
+  const CASES = [
+    { id: "fog", tab: "Fog and a pedestrian", fig: "Paper Fig. 8", dyn: "foggy", frames: 11,
+      setting: "Fog and a wet road, with a pedestrian near a bus stop.",
+      note: "Belief moves to deceleration early and stays there, reaching 0.99 at the last step.",
+      stages: [
+        { t: "1–3", f: [1, 2, 3], w: [.25, .25, .25, .25], h: [
+          "I need to stop because there is a large puddle directly ahead that could cause a hazard.",
+          "I need to decelerate because the road is wet and visibility is low due to fog, requiring cautious driving.",
+          "I need to go-straight because the navigation command is to follow lane and there are no obstacles forcing a change in direction.",
+          "I need to lane-change because there are no visible vehicles or obstacles in adjacent lanes to justify changing lanes."] },
+        { t: "4–7", f: [4, 5, 6, 7], w: [.01, .96, .03, .00], h: [
+          "I need to stop because the large puddle is no longer directly ahead and does not pose an immediate hazard, but the pedestrian and foggy conditions may require slowing down.",
+          "I need to decelerate because the road is wet, visibility is low due to fog, and there is a pedestrian near the bus stop, requiring cautious driving.",
+          "I need to go-straight because the navigation command is to follow lane and there are no immediate obstacles forcing a change in direction, despite the pedestrian and foggy conditions.",
+          "I need to lane-change because there are no visible vehicles or obstacles in adjacent lanes to justify changing lanes, and the pedestrian is on the right side of the road."] },
+        { t: "8–11", f: [8, 9, 10, 11], w: [.01, .99, .00, .00], h: [
+          "I need to stop because the pedestrian is actively walking near the bus stop and the road conditions remain hazardous, making a full stop prudent to ensure safety.",
+          "I need to decelerate because the pedestrian is actively walking near the bus stop, visibility is low due to fog, and the road is wet, requiring cautious driving.",
+          "I need to go-straight because the navigation command is to follow lane and there are no immediate obstacles forcing a change in direction, despite the pedestrian and foggy conditions.",
+          "I need to lane-change because there are no visible vehicles or obstacles in adjacent lanes to justify changing lanes, and the pedestrian is on the right side of the road."] }
+      ] },
+    { id: "cyclist", tab: "Cyclist at a left turn", fig: "Paper Fig. 4", dyn: "urban", frames: 10,
+      setting: "An intersection with a left-turn command and a cyclist near the crosswalk.",
+      note: "Belief settles on caution. Decelerate ends at 0.78, and stop stays in play as a fallback at 0.22.",
+      stages: [
+        { t: "1–3", f: [1, 2, 3], w: [.25, .25, .25, .25], h: [
+          "I need to stop because there are vehicles and a cyclist ahead in the intersection, and stopping is required by traffic rules at a crosswalk.",
+          "I need to decelerate because there are vehicles and a cyclist ahead, and slowing down is prudent to maintain safe following distance.",
+          "I need to go-straight because the traffic light is green and there are no obstacles forcing a lane change, so continuing straight aligns with the navigation command.",
+          "I need to lane-change because there are no visible lane-change indicators or necessary reasons to change lanes in this straight-ahead scenario."] },
+        { t: "4–6", f: [4, 5, 6], w: [.10, .77, .01, .12], h: [
+          "I need to stop because the traffic light is green and there is a cyclist on the left, but no immediate obstacle or stop condition is visible.",
+          "I need to decelerate because the traffic light is green and there is a cyclist on the left, but no immediate obstacle or stop condition is visible.",
+          "I need to go-straight because the traffic light is green and there is a cyclist on the left, but no immediate obstacle or stop condition is visible.",
+          "I need to lane-change because the traffic light is green and there is a cyclist on the left, but no immediate obstacle or stop condition is visible."] },
+        { t: "7–10", f: [7, 8, 9, 10], w: [.22, .78, .00, .00], h: [
+          "I need to stop because the traffic light is red, a cyclist is actively crossing the intersection, and the navigation command is to turn left, requiring a full stop before maneuvering.",
+          "I need to decelerate because the traffic light is red, a cyclist is actively crossing the intersection, and the navigation command is to turn left, requiring a cautious slowdown before maneuvering.",
+          "I need to go-straight because the traffic light is red, a cyclist is actively crossing the intersection, and the navigation command is to turn left, but no immediate obstacle requires continuing straight.",
+          "I need to lane-change because the traffic light is red, a cyclist is actively crossing the intersection, and the navigation command is to turn left, which may require a lane change to position for the turn."] }
+      ] },
+    { id: "crosswalk", tab: "Pedestrian by a crosswalk", fig: "Paper Fig. 7", dyn: null, frames: 4,
+      setting: "A wet intersection with a pedestrian moving near the crosswalk.",
+      note: "Belief ends split between decelerate (0.55) and stop (0.45). Going straight and changing lanes drop to zero.",
+      stages: [
+        { t: "1–2", f: [1, 2], w: [.25, .25, .25, .25], h: [
+          "I need to stop because the pedestrian is crossing and I must yield to them.",
+          "I need to decelerate because the road is wet and visibility is low, requiring cautious driving.",
+          "I need to go-straight because the traffic light is green and there is no immediate obstacle in the path.",
+          "I need to lane-change because there is no visible traffic or obstacle requiring a lane change."] },
+        { t: "3", f: [3], w: [.45, .54, .01, .00], h: [
+          "I need to stop because the pedestrian is running on the sidewalk near a crosswalk and I must yield to them.",
+          "I need to decelerate because the road is wet and visibility is low, requiring cautious driving.",
+          "I need to go-straight because the pedestrian is on the sidewalk and there is no immediate obstacle blocking my path.",
+          "I need to lane-change because there is no visible traffic or obstacle requiring a lane change."] },
+        { t: "4", f: [4], w: [.45, .55, .00, .00], h: [
+          "I need to stop because the pedestrian is running on the sidewalk near a crosswalk and I must yield to them.",
+          "I need to decelerate because the road is wet and visibility is low, requiring cautious driving.",
+          "I need to go-straight because the pedestrian is on the sidewalk and there is no immediate obstacle blocking my path.",
+          "I need to lane-change because there is no visible traffic or obstacle requiring a lane change."] }
+      ] },
+    { id: "night", tab: "Police lights at night", fig: "Paper Fig. 10", dyn: "night", frames: 4,
+      setting: "A dark, wet road with a police vehicle and flashing lights ahead.",
+      note: "Ambiguity persists. Decelerate leads at 0.57, while go straight (0.27) and stop (0.16) keep part of the weight.",
+      stages: [
+        { t: "1–2", f: [1, 2], w: [.25, .25, .25, .25], h: [
+          "I need to stop because the planner has requested braking and the road conditions suggest caution, but no immediate stop is visually required.",
+          "I need to decelerate because the planner has requested braking and the environment is low-visibility and wet, warranting reduced speed.",
+          "I need to go-straight because the navigation command is to follow lane and there are no visible obstacles or lane-change cues.",
+          "I need to lane-change because there are no visible lane-change indicators or safety gaps to justify changing lanes in this traffic scenario."] },
+        { t: "3", f: [3], w: [.15, .54, .31, .00], h: [
+          "I need to stop because the planner has requested braking, the road conditions are low-visibility and wet, and there is a police vehicle ahead with flashing lights, indicating potential hazard.",
+          "I need to decelerate because the planner has requested braking, the environment is low-visibility and wet, and there is a police vehicle ahead with flashing lights, warranting reduced speed.",
+          "I need to go-straight because the navigation command is to follow lane and there are no visible obstacles or lane-change cues, despite the presence of a police vehicle ahead.",
+          "I need to lane-change because there are no visible lane-change indicators or safety gaps to justify changing lanes in this traffic scenario, despite the presence of a police vehicle ahead."] },
+        { t: "4", f: [4], w: [.16, .57, .27, .00], h: [
+          "I need to stop because the planner has requested braking, the road conditions are low-visibility and wet, and there is a police vehicle ahead with flashing lights, indicating potential hazard.",
+          "I need to decelerate because the planner has requested braking, the environment is low-visibility and wet, and there is a police vehicle ahead with flashing lights, warranting reduced speed.",
+          "I need to go-straight because the navigation command is to follow lane and there are no visible obstacles or lane-change cues, despite the presence of a police vehicle ahead with flashing lights.",
+          "I need to lane-change because there are no visible lane-change indicators or safety gaps to justify changing lanes in this traffic scenario, despite the presence of a police vehicle ahead with flashing lights."] }
+      ] },
+    { id: "parking", tab: "Leaving a parking spot", fig: "Paper Fig. 9", dyn: "parking", frames: 4,
+      setting: "A low-ambiguity exit onto a wet street, with a vehicle in the adjacent lane at first.",
+      note: "Once the lane is clear, go straight takes 0.99. DriveMind does not stay cautious when the evidence supports moving on.",
+      stages: [
+        { t: "1–3", f: [1, 2], w: [.25, .25, .25, .25], h: [
+          "I need to stop because the planner has requested braking and the road conditions may require caution, but no immediate obstacle is visible to justify a full stop.",
+          "I need to decelerate because the planner has requested braking and the road is wet, which may reduce traction and visibility, making a gradual slowdown prudent.",
+          "I need to go-straight because the navigation command is to follow the lane, and there are no visible obstacles or lane-change cues requiring deviation.",
+          "I need to lane-change because there is no visible reason to change lanes, and the navigation command is to follow the lane."] },
+        { t: "4–5", f: [3], w: [.01, .37, .61, .01], h: [
+          "I need to stop because the blue SUV is no longer directly in the adjacent lane, and the wet conditions are no longer an immediate collision risk, making stopping unnecessary.",
+          "I need to decelerate because the blue SUV is no longer directly in the adjacent lane, and the wet road conditions still require caution, but deceleration is no longer the most appropriate response.",
+          "I need to go-straight because the blue SUV is no longer directly in the adjacent lane, the navigation command is to follow the lane, and the road conditions are manageable, making continuing straight the safest and most aligned action.",
+          "I need to lane-change because the blue SUV is no longer directly in the adjacent lane, and there is no compelling reason to change lanes given the navigation command to follow the lane."] },
+        { t: "6–8", f: [4], w: [.00, .01, .99, .00], h: [
+          "I need to stop because the road is wet and a car is ahead, but there is no immediate collision risk, making stopping unnecessary.",
+          "I need to decelerate because the road is wet and a car is ahead, but the navigation command is to follow the lane, and deceleration is no longer the most appropriate response.",
+          "I need to go-straight because the road is wet, a car is ahead in the same lane, the navigation command is to follow the lane, and the conditions are manageable, making continuing straight the safest and most aligned action.",
+          "I need to lane-change because the road is wet, a car is ahead in the same lane, and there is no compelling reason to change lanes given the navigation command to follow the lane."] }
+      ] }
+  ];
+
+  // Figure 3: per-step belief statistics, read from the plotted curves (8 reasoning steps).
+  const DYN = {
+    names: { foggy: "Foggy Road", urban: "Urban Intersection", night: "Night Accident", parking: "Parking Exit" },
+    order: ["foggy", "urban", "night", "parking"],
+    entropy:  { foggy: [1.214, 1.018, 0.849, 0.753, 0.527, 0.301, 0.180, 0.129], urban: [1.137, 1.096, 0.897, 0.852, 0.852, 0.718, 0.732, 0.660],
+                night: [1.205, 1.033, 0.927, 0.850, 0.792, 0.752, 0.724, 0.706], parking: [1.137, 1.093, 0.919, 0.893, 0.751, 0.430, 0.184, 0.068] },
+    dominant: { foggy: [0.340, 0.471, 0.478, 0.538, 0.835, 0.930, 0.963, 0.976], urban: [0.450, 0.581, 0.662, 0.669, 0.669, 0.770, 0.756, 0.789],
+                night: [0.400, 0.496, 0.536, 0.559, 0.572, 0.580, 0.585, 0.587], parking: [0.450, 0.560, 0.696, 0.630, 0.614, 0.855, 0.955, 0.987] },
+    ess:      { foggy: [3.203, 2.545, 2.184, 2.039, 1.395, 1.153, 1.077, 1.050], urban: [2.768, 2.443, 2.008, 1.967, 1.967, 1.618, 1.663, 1.549],
+                night: [3.101, 2.575, 2.307, 2.148, 2.056, 2.004, 1.974, 1.958], parking: [2.768, 2.502, 1.920, 2.057, 1.952, 1.332, 1.093, 1.026] }
+  };
+
+  // Table 2 (scenario categories) and Table 8 (long-tail scenarios). d = ΔDS as printed.
+  const SCEN = {
+    categories: [
+      { n: "Opposite direction",        ds: [42.7, 63.2], sr: [13.3, 13.3], d: 20.5 },
+      { n: "Unsignalized intersection", ds: [54.4, 74.4], sr: [16.7, 30.0], d: 20.0 },
+      { n: "Pedestrian crossing",       ds: [53.3, 70.2], sr: [20.0, 30.0], d: 16.9 },
+      { n: "Obstacle / hazard",         ds: [84.0, 98.7], sr: [73.3, 96.7], d: 14.6 },
+      { n: "Merging",                   ds: [72.0, 85.6], sr: [50.0, 70.0], d: 13.6 },
+      { n: "Cut-in / lane change",      ds: [81.6, 94.0], sr: [60.0, 85.0], d: 12.4 },
+      { n: "Actor flow / highway",      ds: [73.6, 80.8], sr: [40.0, 55.0], d: 7.2 },
+      { n: "Signalized intersection",   ds: [58.8, 64.6], sr: [12.0, 4.0],  d: 5.8 },
+      { n: "Emergency / accident",      ds: [88.0, 91.7], sr: [76.0, 84.0], d: 3.7 },
+      { n: "Overall",                   ds: [68.5, 81.4], sr: [41.4, 54.1], d: 12.9, total: true }
+    ],
+    longtail: [
+      { n: "Parking exit, crossing pedestrian", ds: [53.2, 100.0], sr: [20, 100], d: 46.8 },
+      { n: "Merger into slow traffic (V2)",     ds: [44.0, 79.2],  sr: [0, 60],   d: 35.2 },
+      { n: "Hazard at side lane (two ways)",    ds: [66.6, 100.0], sr: [40, 100], d: 33.4 },
+      { n: "Non-signalized junction, right turn", ds: [49.7, 81.6], sr: [20, 40], d: 31.9 },
+      { n: "T-junction",                        ds: [59.2, 86.0],  sr: [0, 60],   d: 26.8 },
+      { n: "Interurban advanced actor flow",    ds: [68.0, 92.0],  sr: [20, 80],  d: 24.0 }
+    ]
+  };
+
+  // Table 1(a): closed-loop metrics on Bench2Drive.
+  const BOARD = [
+    { n: "TCP", g: "dist", eff: "54.26", com: "47.80", sr: 15.00, ds: 40.70 },
+    { n: "TCP-ctrl", g: "dist", eff: "55.97", com: "51.51", sr: 7.27, ds: 30.47 },
+    { n: "TCP-traj", g: "dist", eff: "76.54", com: "18.08", sr: 30.00, ds: 59.90 },
+    { n: "ThinkTwice", g: "dist", eff: "76.93", com: "16.22", sr: 31.23, ds: 62.44 },
+    { n: "DriveAdapter", g: "dist", eff: "70.22", com: "16.01", sr: 33.08, ds: 64.22 },
+    { n: "AD-MLP", g: "", eff: "48.45", com: "22.63", sr: 0.00, ds: 18.05 },
+    { n: "UniAD-T.", g: "", eff: "123.92", com: "47.04", sr: 13.18, ds: 40.73 },
+    { n: "UniAD-B.", g: "", eff: "129.21", com: "43.58", sr: 16.36, ds: 45.81 },
+    { n: "VAD", g: "", eff: "157.94", com: "46.01", sr: 15.00, ds: 42.35 },
+    { n: "DriveTransformer-L.", g: "", eff: "100.64", com: "46.01", sr: 35.00, ds: 63.46 },
+    { n: "ReCogDrive", g: "", eff: "138.18", com: "17.45", sr: 45.45, ds: 71.36 },
+    { n: "DriveMind without belief", g: "mid", eff: "134.75 ± 1.86", com: "18.01 ± 0.08", sr: 41.36, ds: 68.50, srsd: "1.85", dssd: "1.39" },
+    { n: "DriveMind", g: "ours", eff: "114.83 ± 0.33", com: "18.98 ± 0.12", sr: 54.09, ds: 81.37, srsd: "1.10", dssd: "1.41" }
+  ];
+
+  // Table 5 (system-level latency under shared-GPU execution).
+  const LATENCY = [
+    { n: "Synchronous", v: 177.0, cls: "" },
+    { n: "Async refresh, s = 2", v: 94.7, cls: "is-ours" },
+    { n: "Async refresh, s = 4", v: 65.5, cls: "is-ours" },
+    { n: "Async refresh, s = 6", v: 57.1, cls: "is-ours" }
+  ];
+
+  // Figure 6: diversity maintenance.
+  const RESAMPLE = [
+    { rows: [["h", "1", "", .80], ["h", "2", "", .15], ["h", "3", "", .03], ["h", "4", "", .02]],
+      cap: "One hypothesis holds 0.80 of the weight, so the effective sample size has dropped below αK." },
+    { rows: [["h", "1", "", .80], ["h", "1", "", .80, "copy"], ["h", "1", "", .80, "copy"], ["h", "2", "", .15]],
+      cap: "Drawing by weight copies h¹ into three slots. Left alone, the set would now hold one idea three times." },
+    { rows: [["h", "1", "", .31], ["h", "1", "′", .31, "new"], ["h", "1", "″", .31, "new"], ["h", "2", "", .07]],
+      cap: "Two copies are regenerated as different readings, h¹′ and h¹″, that still fit the frame. The weights are renormalized." }
+  ];
+
+  const frameSrc = (c, i) => `assets/cases/${c.id}/${pad(i)}.jpg`;
+  const fw = w => Math.round(330 + 540 * w);              // belief -> font weight
+  const op = w => (0.6 + 0.4 * Math.sqrt(w)).toFixed(3); // belief -> opacity
+  const isUniform = w => w.every(v => Math.abs(v - w[0]) < 1e-9);
+  function frameSeq(c) {
+    const seq = [];
+    c.stages.forEach((s, si) => s.f.forEach((f, fi) => seq.push({ si, f, fi, n: s.f.length })));
+    return seq;
+  }
+  function preload(c) { c.stages.forEach(s => s.f.forEach(i => { const im = new Image(); im.src = frameSrc(c, i); })); }
+
+  /* ------------------------------------------------------------------
+     HERO MONITOR: autoplays the cyclist case once it is on screen.
+     ------------------------------------------------------------------ */
+  function initHero() {
+    const root = $("#hero-monitor");
+    if (!root) return;
+    const c = CASES.find(x => x.id === "cyclist");
+    const seq = frameSeq(c);
+    const img = $("[data-role=frame]", root), tEl = $("[data-role=t]", root), fc = $("[data-role=fc]", root);
+    const lead = $("[data-role=lead]", root), rows = $$(".mb", root), stageBtns = $$(".stage-btn", root);
+    const playBtn = $("[data-role=play]", root);
+    let pos = seq.length - 1, timer = null, playing = false, onScreen = true;
+
+    function show(p) {
+      pos = p;
+      const { si, f, fi, n } = seq[p], s = c.stages[si];
+      img.src = frameSrc(c, f);
+      tEl.textContent = `t = ${s.t}`;
+      fc.textContent = `frame ${pad(f)} / ${pad(c.frames)}`;
+      rows.forEach((r, k) => { r.style.setProperty("--w", s.w[k]); $(".mb-v", r).textContent = f2(s.w[k]); });
+      lead.replaceChildren();
+      if (isUniform(s.w)) {
+        lead.append(el("span", { class: "k", text: "Leading hypothesis" }),
+                    el("span", { class: "u", text: "None yet. All four hypotheses start at 0.25, one per maneuver." }));
+      } else {
+        const max = Math.max(...s.w), k = s.w.indexOf(max);
+        lead.append(el("span", { class: "k", text: `Leading hypothesis · ${MAN[k].label} · ${f2(max)}` }),
+                    el("q", { style: `--fw:${fw(max)}`, text: s.h[k] }));
+      }
+      stageBtns.forEach((b, k) => {
+        b.setAttribute("aria-selected", String(k === si));
+        $(".prog", b).style.width = k < si ? "100%" : k === si ? `${((fi + 1) / n) * 100}%` : "0%";
+      });
+    }
+    function setPlayLabel() {
+      playBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
+      playBtn.replaceChildren();
+      playBtn.innerHTML = playing
+        ? '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5h2v9H3zM7 1.5h2v9H7z" fill="currentColor"/></svg><span>Pause</span>'
+        : '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5v9l8-4.5z" fill="currentColor"/></svg><span>Play</span>';
+    }
+    function tick() {
+      clearTimeout(timer);
+      if (!playing || !onScreen) return;
+      const last = pos === seq.length - 1;
+      timer = setTimeout(() => { show(last ? 0 : pos + 1); tick(); }, last ? 3200 : 950);
+    }
+    function play() { playing = true; setPlayLabel(); if (pos === seq.length - 1) show(0); tick(); }
+    function pause() { playing = false; setPlayLabel(); clearTimeout(timer); }
+    playBtn.addEventListener("click", () => (playing ? pause() : play()));
+    stageBtns.forEach((b, k) => b.addEventListener("click", () => {
+      pause();
+      show(seq.findIndex(q => q.si === k && q.fi === c.stages[k].f.length - 1));
+    }));
+    preload(c);
+    show(pos);
+    setPlayLabel();
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(es => { onScreen = es[0].isIntersecting; if (onScreen) tick(); else clearTimeout(timer); }, { threshold: 0.25 }).observe(root);
+    }
+    if (!RM) setTimeout(play, 900);
+  }
+
+  /* ------------------------------------------------------------------
+     CASE EXPLORER (dark band)
+     ------------------------------------------------------------------ */
+  function initExplorer() {
+    const tabsEl = $("#case-tabs");
+    if (!tabsEl) return;
+    const frameEl = $("#ex-frame"), fcEl = $("#ex-fc"), stripEl = $("#ex-strip"), hypsEl = $("#ex-hyps");
+    const tEl = $("#ex-t"), figEl = $("#ex-fig"), metaEl = $("#ex-meta"), noteEl = $("#ex-note");
+    const stackEl = $("#ex-stack"), stackLeg = $("#ex-stack-legend");
+    const prevBtn = $("#ex-prev"), nextBtn = $("#ex-next"), playBtn = $("#ex-play");
+    let c = null, seq = [], pos = 0, timer = null, playing = false;
+
+    const tabs = CASES.map((cs, i) => {
+      const b = el("button", { class: "tab", role: "tab", id: `tab-${cs.id}`, "aria-selected": "false", "aria-controls": "explorer", tabindex: "-1", type: "button", text: cs.tab });
+      b.addEventListener("click", () => select(i, true));
+      b.addEventListener("keydown", e => {
+        if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+        e.preventDefault();
+        const j = (i + (e.key === "ArrowRight" ? 1 : -1) + CASES.length) % CASES.length;
+        select(j, true); tabs[j].focus();
+      });
+      tabsEl.append(b);
+      return b;
+    });
+
+    // hypothesis rows are built once and reused
+    const hypRows = MAN.map((m, k) => {
+      const w = el("span", { class: "hyp-w" });
+      const text = el("p", { class: "hyp-text" });
+      const bar = el("span", { class: "hyp-bar" }, el("span"));
+      const li = el("li", { class: "hyp", "data-m": m.key },
+        el("div", { class: "hyp-top" }, el("span", { text: `H${k + 1}` }), el("span", { class: "mchip" }, el("i", { class: "key" }), m.label)),
+        w, text, bar);
+      hypsEl.append(li);
+      return { li, w, text };
+    });
+
+    function setPlaying(on) {
+      playing = on;
+      playBtn.innerHTML = on
+        ? '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5h2v9H3zM7 1.5h2v9H7z" fill="currentColor"/></svg><span>Pause</span>'
+        : '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5v9l8-4.5z" fill="currentColor"/></svg><span>Play</span>';
+      playBtn.setAttribute("aria-label", on ? "Pause" : "Play from the first frame");
+      if (!on) clearTimeout(timer);
+    }
+    function step() {
+      clearTimeout(timer);
+      if (!playing) return;
+      if (pos >= seq.length - 1) { setPlaying(false); return; }
+      timer = setTimeout(() => { show(pos + 1); step(); }, 1000);
+    }
+
+    function lockHeight() {
+      // Reserve the height of the tallest reasoning step, so the page does not jump
+      // when the hypothesis text and its weight change. Transitions are off while measuring.
+      hypsEl.classList.add("measuring");
+      hypsEl.style.minHeight = "";
+      let max = 0;
+      c.stages.forEach(s => {
+        hypRows.forEach((r, k) => { r.text.textContent = s.h[k]; r.text.style.setProperty("--fw", fw(s.w[k])); });
+        max = Math.max(max, hypsEl.offsetHeight);
+      });
+      hypsEl.style.minHeight = max + "px";
+      show(pos);
+      void hypsEl.offsetHeight;
+      requestAnimationFrame(() => requestAnimationFrame(() => hypsEl.classList.remove("measuring")));
+    }
+
+    function show(p) {
+      pos = p;
+      const { si, f } = seq[p], s = c.stages[si];
+      frameEl.src = frameSrc(c, f);
+      frameEl.alt = `Front camera, ${c.tab.toLowerCase()}, frame ${f} of ${c.frames}`;
+      fcEl.textContent = `frame ${pad(f)} / ${pad(c.frames)}`;
+      tEl.textContent = `t = ${s.t}`;
+      hypRows.forEach((r, k) => {
+        r.text.textContent = s.h[k];
+        r.li.style.setProperty("--w", s.w[k]);
+        r.text.style.setProperty("--fw", fw(s.w[k]));
+        r.text.style.setProperty("--o", op(s.w[k]));
+        r.w.textContent = f2(s.w[k]);
+      });
+      $$(".thumb", stripEl).forEach((t, i) => t.setAttribute("aria-current", String(i === p)));
+      $$(".strip-stage", stripEl).forEach((g, i) => g.classList.toggle("is-on", i === si));
+      prevBtn.disabled = si === 0 && seq[p].fi === 0;
+      nextBtn.disabled = p === seq.length - 1;
+    }
+
+    function select(i, focusTab) {
+      setPlaying(false);
+      c = CASES[i]; seq = frameSeq(c);
+      tabs.forEach((b, j) => { b.setAttribute("aria-selected", String(j === i)); b.tabIndex = j === i ? 0 : -1; });
+      $("#explorer").setAttribute("aria-labelledby", `tab-${c.id}`);
+      figEl.textContent = c.fig;
+      metaEl.replaceChildren(el("b", { text: c.tab + ". " }), c.setting);
+      noteEl.textContent = c.note;
+      // filmstrip grouped by reasoning step
+      stripEl.replaceChildren();
+      let idx = 0;
+      c.stages.forEach(s => {
+        const frames = el("div", { class: "strip-frames" });
+        s.f.forEach(f => {
+          const p = idx++;
+          const b = el("button", { class: "thumb", type: "button", "aria-label": `Frame ${f}, reasoning step t = ${s.t}` },
+            el("img", { src: frameSrc(c, f), alt: "", loading: "lazy", width: "400", height: "225" }));
+          b.addEventListener("click", () => { setPlaying(false); show(p); });
+          frames.append(b);
+        });
+        const g = el("div", { class: "strip-stage", style: `flex:${s.f.length} 1 0` }, el("span", { class: "strip-t", text: `t = ${s.t}` }), frames);
+        stripEl.append(g);
+      });
+      // weighted action at the last step
+      const last = c.stages[c.stages.length - 1].w;
+      stackEl.replaceChildren();
+      last.forEach((v, k) => { if (v > 0) stackEl.append(el("span", { "data-m": MAN[k].key, style: `flex:${v} 1 0` })); });
+      stackEl.setAttribute("aria-label", "Weighted action: " + MAN.map((m, k) => `${m.label} ${f2(last[k])}`).join(", "));
+      stackLeg.replaceChildren(...MAN.map((m, k) => el("li", { "data-m": m.key }, el("i", { class: "key" }), m.label, " ", el("b", { text: f2(last[k]) }))));
+      preload(c);
+      pos = seq.length - 1;
+      lockHeight();
+      highlightDyn(c.dyn);
+    }
+
+    // Earlier / Later move one reasoning step and show that step's last frame.
+    const lastOf = si => seq.findIndex(q => q.si === si && q.fi === c.stages[si].f.length - 1);
+    prevBtn.addEventListener("click", () => {
+      setPlaying(false);
+      const { si } = seq[pos];
+      show(si === 0 ? 0 : lastOf(si - 1));
+    });
+    nextBtn.addEventListener("click", () => {
+      setPlaying(false);
+      const { si } = seq[pos];
+      show(si === c.stages.length - 1 ? seq.length - 1 : lastOf(si + 1));
+    });
+    playBtn.addEventListener("click", () => {
+      if (playing) { setPlaying(false); return; }
+      setPlaying(true);
+      if (pos >= seq.length - 1) show(0);
+      step();
+    });
+
+    select(0, false);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => lockHeight());
+    let rz;
+    window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(lockHeight, 200); });
+  }
+
+  /* ------------------------------------------------------------------
+     BELIEF DYNAMICS (Figure 3) – small multiples, highlight follows the case tab
+     ------------------------------------------------------------------ */
+  const NS = "http://www.w3.org/2000/svg";
+  const sv = (tag, attrs = {}) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); return n; };
+  let dynSel = null;
+  const dynPanels = [];
+  function highlightDyn(key) {
+    dynSel = key;
+    dynPanels.forEach(p => p.lines.forEach((ln, k) => {
+      const on = DYN.order[k] === key;
+      ln.classList.toggle("sel", on);
+      if (on) ln.parentNode.append(ln);
+    }));
+    dynPanels.forEach(p => {
+      const i = DYN.order.indexOf(key);
+      p.dot.style.display = i === -1 ? "none" : "";
+      if (i !== -1) { const ys = p.data[key]; p.dot.setAttribute("cx", p.x(8)); p.dot.setAttribute("cy", p.y(ys[7])); p.dot.parentNode.append(p.dot); }
+    });
+    const leg = $("#dyn-legend");
+    if (leg) {
+      leg.replaceChildren(
+        el("span", {}, el("i", { class: "sel" }), key ? `${DYN.names[key]} (this case)` : "This case is not part of Figure 3"),
+        el("span", {}, el("i"), key ? "Other scenarios" : "Foggy Road, Urban Intersection, Night Accident, Parking Exit"));
+    }
+  }
+  function initDyn() {
+    const grid = $("#dyn-grid");
+    if (!grid) return;
+    const W = 300, H = 178, L = 34, R = 10, T = 12, B = 26;
+    const panels = [
+      { key: "entropy", title: "Belief entropy", sym: "U", lo: 0, hi: 1.5, ticks: [0, 0.5, 1, 1.5], ref: { v: Math.log(4), label: "log K" } },
+      { key: "dominant", title: "Leading weight", sym: "max w", lo: 0, hi: 1, ticks: [0, 0.25, 0.5, 0.75, 1], ref: null },
+      { key: "ess", title: "Effective sample size", sym: "ESS", lo: 1, hi: 4, ticks: [1, 2, 3, 4], ref: { v: 2, label: "αK" } }
+    ];
+    const box = $("#dyn");
+    const tip = el("div", { class: "tip", hidden: "" });
+    box.append(tip);
+    panels.forEach(P => {
+      const x = s => L + (s - 1) * (W - L - R) / 7;
+      const y = v => T + (P.hi - v) * (H - T - B) / (P.hi - P.lo);
+      const svg = sv("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${P.title} over eight reasoning steps for four scenarios` });
+      P.ticks.forEach(v => {
+        svg.append(sv("line", { class: "dg", x1: L, x2: W - R, y1: y(v), y2: y(v) }));
+        const t = sv("text", { class: "dt", x: L - 6, y: y(v) + 3.5, "text-anchor": "end" }); t.textContent = String(v); svg.append(t);
+      });
+      for (let s = 1; s <= 8; s++) { const t = sv("text", { class: "dt", x: x(s), y: H - 8, "text-anchor": "middle" }); t.textContent = s; svg.append(t); }
+      if (P.ref) {
+        svg.append(sv("line", { class: "dref", x1: L, x2: W - R, y1: y(P.ref.v), y2: y(P.ref.v) }));
+        const t = sv("text", { class: "dt", x: W - R, y: y(P.ref.v) - 5, "text-anchor": "end" }); t.textContent = P.ref.label; svg.append(t);
+      }
+      const g = sv("g");
+      const lines = DYN.order.map(k => {
+        const d = DYN[P.key][k].map((v, i) => `${i ? "L" : "M"}${x(i + 1).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
+        const p = sv("path", { class: "dl", d }); g.append(p); return p;
+      });
+      svg.append(g);
+      const dot = sv("circle", { class: "ddot", r: 4.5, cx: 0, cy: 0 });
+      g.append(dot);
+      const cross = sv("line", { class: "dcross", y1: T, y2: H - B, x1: 0, x2: 0, visibility: "hidden" });
+      svg.append(cross);
+      const head = el("h4", { text: P.title });
+      const symb = el("span"); symb.innerHTML = P.key === "entropy" ? "U<sub>t</sub>" : P.key === "dominant" ? "max<sub>k</sub> w<sup>k</sup><sub>t</sub>" : "ESS<sub>t</sub>";
+      head.append(symb);
+      const panel = el("div", { class: "dyn-panel" }, head);
+      panel.append(svg);
+      grid.append(panel);
+      const rec = { lines, dot, x, y, data: DYN[P.key] };
+      dynPanels.push(rec);
+      function move(ev) {
+        const r = svg.getBoundingClientRect();
+        const px = (ev.clientX - r.left) * (W / r.width);
+        const s = Math.min(8, Math.max(1, Math.round((px - L) / ((W - L - R) / 7)) + 1));
+        cross.setAttribute("x1", x(s)); cross.setAttribute("x2", x(s)); cross.setAttribute("visibility", "visible");
+        const keys = dynSel ? [dynSel, ...DYN.order.filter(k => k !== dynSel)] : DYN.order;
+        tip.replaceChildren(el("div", { class: "t", text: `${P.title} · step ${s}` }),
+          ...keys.map(k => el("div", { class: "row" + (k === dynSel ? " sel" : "") }, el("span", { text: DYN.names[k] }), el("b", { text: DYN[P.key][k][s - 1].toFixed(2) }))));
+        tip.hidden = false;
+        const br = box.getBoundingClientRect();
+        let left = ev.clientX - br.left + 14, top = ev.clientY - br.top + 14;
+        if (left + 190 > br.width) left = ev.clientX - br.left - 200;
+        tip.style.left = left + "px"; tip.style.top = top + "px";
+      }
+      svg.addEventListener("pointermove", move);
+      svg.addEventListener("pointerdown", move);
+      svg.addEventListener("pointerleave", () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); });
+    });
+    // table view
+    const tbl = el("table");
+    tbl.append(el("thead", {}, el("tr", {}, el("th", { text: "Scenario · statistic" }), ...[1, 2, 3, 4, 5, 6, 7, 8].map(s => el("th", { text: `t=${s}` })))));
+    const tb = el("tbody");
+    DYN.order.forEach(k => panels.forEach(P => tb.append(el("tr", {}, el("td", { text: `${DYN.names[k]} · ${P.title}` }), ...DYN[P.key][k].map(v => el("td", { text: v.toFixed(2) }))))));
+    tbl.append(tb);
+    $("#dyn-table").append(tbl);
+  }
+
+  /* ------------------------------------------------------------------
+     RESULTS: dumbbell (Table 2 / Table 8)
+     ------------------------------------------------------------------ */
+  function initDumbbell() {
+    const rowsEl = $("#db-rows");
+    if (!rowsEl) return;
+    const card = $("#dumbbell");
+    const tip = el("div", { class: "charttip", hidden: "" });
+    card.append(tip);
+    let set = "categories", metric = "ds";
+    const fmtD = v => (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toFixed(1);
+    const num = v => (Number.isInteger(v) && set === "longtail" && metric === "sr" ? String(v) : v.toFixed(1));
+    function render() {
+      rowsEl.replaceChildren();
+      SCEN[set].forEach(r => {
+        const [a, b] = r[metric];
+        const d = metric === "ds" ? r.d : +(b - a).toFixed(1);
+        const lo = Math.min(a, b), hi = Math.max(a, b);
+        const unit = metric === "ds" ? "" : "%";
+        const row = el("div", { class: "db-row" + (r.total ? " is-total" : ""), tabindex: "0",
+          "aria-label": `${r.n}: ${num(a)}${unit} without belief tracking, ${num(b)}${unit} with DriveMind, change ${fmtD(d)}` },
+          el("span", { class: "db-label", text: r.n }),
+          el("span", { class: "db-track" },
+            el("span", { class: "db-conn", style: `left:${lo}%;width:${hi - lo}%` }),
+            el("span", { class: "db-dot base", style: `left:${a}%` }),
+            el("span", { class: "db-dot ours", style: `left:${b}%` })),
+          el("span", { class: "db-delta" + (d < 0 ? " neg" : ""), text: fmtD(d) }));
+        const showTip = ev => {
+          tip.replaceChildren(el("div", { class: "t", text: r.n }),
+            el("div", {}, "Without belief ", el("b", { text: num(a) + unit })),
+            el("div", {}, "DriveMind ", el("b", { text: num(b) + unit })));
+          tip.hidden = false;
+          const cr = card.getBoundingClientRect(), rr = row.getBoundingClientRect();
+          const x = ev && ev.clientX ? ev.clientX - cr.left + 12 : rr.right - cr.left - 270;
+          tip.style.left = Math.min(Math.max(8, x), cr.width - 270) + "px";
+          tip.style.top = (rr.bottom - cr.top + 4) + "px";
+        };
+        row.addEventListener("pointermove", showTip);
+        row.addEventListener("focus", () => showTip(null));
+        row.addEventListener("pointerleave", () => (tip.hidden = true));
+        row.addEventListener("blur", () => (tip.hidden = true));
+        rowsEl.append(row);
+      });
+      $("#db-dh").textContent = metric === "ds" ? "Δ DS" : "Δ SR, pp";
+      const note = $("#db-note");
+      note.replaceChildren();
+      if (set === "categories" && metric === "sr") {
+        note.append(el("b", { text: "Success rate does not rise everywhere. " }), "It stays at 13.3% for oncoming traffic and falls from 12.0% to 4.0% at signalized intersections, even though the Driving Score improves in both.");
+      } else if (set === "categories") {
+        note.append("Driving Score improves in every category. Rows are sorted by the gain; ", el("b", { text: "Overall" }), " is the full benchmark.");
+      } else {
+        note.append("Long-tail scenarios from Bench2Drive, chosen for rare events, occluded agents, ambiguous pedestrian intent or dense vehicle interactions. DriveMind improves on every one of them.");
+      }
+      const sr = v => (set === "longtail" ? String(v) : v.toFixed(1));
+      const tbl = el("table");
+      tbl.append(el("thead", {}, el("tr", {}, ...["Scenario", "DS without belief", "DS DriveMind", "SR without belief (%)", "SR DriveMind (%)", "Δ DS"].map(h => el("th", { text: h })))));
+      const tb = el("tbody");
+      SCEN[set].forEach(r => tb.append(el("tr", {}, el("td", { text: r.n }), el("td", { text: r.ds[0].toFixed(1) }), el("td", { text: r.ds[1].toFixed(1) }),
+        el("td", { text: sr(r.sr[0]) }), el("td", { text: sr(r.sr[1]) }), el("td", { text: "+" + r.d.toFixed(1) }))));
+      tbl.append(tb);
+      $("#db-table").replaceChildren(tbl);
+    }
+    segment($("#db-set"), v => { set = v; render(); });
+    segment($("#db-metric"), v => {
+      metric = v;
+      // move existing dots when only the metric changes
+      const rows = $$(".db-row", rowsEl);
+      if (rows.length === SCEN[set].length) {
+        SCEN[set].forEach((r, i) => {
+          const [a, b] = r[metric], lo = Math.min(a, b), hi = Math.max(a, b);
+          const row = rows[i];
+          $(".db-conn", row).style.cssText = `left:${lo}%;width:${hi - lo}%`;
+          $(".db-dot.base", row).style.left = a + "%";
+          $(".db-dot.ours", row).style.left = b + "%";
+        });
+        setTimeout(render, 520);
+      } else render();
+    });
+    render();
+  }
+
+  /* ------------------------------------------------------------------
+     Shared: segmented controls and horizontal bar charts
+     ------------------------------------------------------------------ */
+  function segment(group, onChange) {
+    if (!group) return;
+    const btns = $$("button", group);
+    btns.forEach(b => b.addEventListener("click", () => {
+      btns.forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+      onChange(b.dataset.v ?? b.dataset.s);
+    }));
+  }
+  function hbar(root, rows, { max, ticks, fmt, ref }) {
+    root.replaceChildren();
+    const card = root.closest(".chart-card") || root.parentElement;
+    let tip = card.querySelector(":scope > .charttip");
+    if (!tip) { tip = el("div", { class: "charttip", hidden: "" }); card.style.position = "relative"; card.append(tip); }
+    const pct = v => `${(v / max) * 100}%`;
+    root.append(el("div", { class: "hb-axis", "aria-hidden": "true" }, el("span"),
+      el("div", { class: "ticks" }, ...ticks.map(t => el("span", { style: `left:${pct(t)}`, text: fmt.tick(t) })))));
+    const body = el("div", { class: "hb-body" });
+    rows.forEach(r => {
+      const plot = el("span", { class: "hb-plot" },
+        ...ticks.map(t => el("span", { class: "hb-gl", style: `left:${pct(t)}` })),
+        ref ? el("span", { class: "hb-ref", style: `left:${pct(ref.v)}` }) : null,
+        el("span", { class: "hb-bar" }),
+        el("span", { class: "hb-val", text: fmt.val(r) }));
+      const row = el("div", { class: `hb-row ${r.cls || ""}`, tabindex: "0", "aria-label": `${r.n}: ${fmt.aria(r)}` },
+        el("span", { class: "hb-label" }, r.n, r.tag ? el("span", { class: "tagd", text: r.tag }) : null),
+        el("span", { class: "hb-track", style: `--v:${r.v / max}` }, plot));
+      const showTip = ev => {
+        tip.replaceChildren(el("div", { class: "t", text: r.n }), el("div", {}, el("b", { text: fmt.aria(r) })));
+        tip.hidden = false;
+        const cr = card.getBoundingClientRect(), rr = row.getBoundingClientRect();
+        const x = ev ? ev.clientX - cr.left + 12 : rr.left - cr.left + 40;
+        tip.style.left = Math.max(8, Math.min(x, cr.width - 240)) + "px";
+        tip.style.top = (rr.bottom - cr.top + 4) + "px";
+      };
+      row.addEventListener("pointermove", showTip);
+      row.addEventListener("focus", () => showTip(null));
+      row.addEventListener("pointerleave", () => (tip.hidden = true));
+      row.addEventListener("blur", () => (tip.hidden = true));
+      body.append(row);
+    });
+    root.append(body);
+  }
+
+  function initBoard() {
+    const root = $("#leaderboard");
+    if (!root) return;
+    let metric = "ds";
+    function render() {
+      const rows = [...BOARD].sort((a, b) => b[metric] - a[metric]).map(r => ({
+        n: r.n, v: r[metric], tag: r.g === "dist" ? "dist." : "",
+        cls: r.g === "ours" ? "is-ours" : r.g === "mid" ? "is-mid" : "",
+        sd: metric === "ds" ? r.dssd : r.srsd
+      }));
+      hbar(root, rows, {
+        max: 100, ticks: [0, 25, 50, 75, 100],
+        fmt: {
+          tick: t => metric === "sr" ? `${t}%` : String(t),
+          val: r => r.v.toFixed(2) + (metric === "sr" ? "%" : "") + (r.sd ? ` ± ${r.sd}` : ""),
+          aria: r => (metric === "ds" ? "Driving Score " : "Success rate ") + r.v.toFixed(2) + (metric === "sr" ? "%" : "") + (r.sd ? ` ± ${r.sd}` : "")
+        }
+      });
+    }
+    segment($("#lb-metric"), v => { metric = v; render(); });
+    render();
+    const tbl = el("table");
+    tbl.append(el("thead", {}, el("tr", {}, ...["Method", "Distillation", "Efficiency", "Comfort", "SR (%)", "DS"].map(h => el("th", { text: h })))));
+    const tb = el("tbody");
+    BOARD.forEach(r => tb.append(el("tr", {}, el("td", { text: r.n }), el("td", { text: r.g === "dist" ? "yes" : "no" }), el("td", { text: r.eff }), el("td", { text: r.com }),
+      el("td", { text: r.sr.toFixed(2) + (r.srsd ? ` ± ${r.srsd}` : "") }), el("td", { text: r.ds.toFixed(2) + (r.dssd ? ` ± ${r.dssd}` : "") }))));
+    tbl.append(tb);
+    $("#lb-table").append(tbl);
+  }
+
+  function initLatency() {
+    const root = $("#latency");
+    if (!root) return;
+    hbar(root, LATENCY.map(r => ({ ...r })), {
+      max: 200, ticks: [0, 50, 100, 150, 200],
+      ref: { v: 100, label: "100 ms = one 10 Hz period" },
+      fmt: { tick: t => t === 200 ? "200 ms" : String(t), val: r => r.v.toFixed(1) + " ms", aria: r => r.v.toFixed(1) + " ms mean per control step" }
+    });
+  }
+
+  function initResample() {
+    const root = $("#resample");
+    if (!root) return;
+    const list = $(".rs-rows", root), cap = $(".rs-cap", root);
+    const rows = [0, 1, 2, 3].map(() => {
+      const h = el("span", { class: "rs-h" });
+      const fill = el("span", { class: "rs-fill" });
+      const w = el("span", { class: "rs-w" });
+      const li = el("li", { class: "rs-row" }, h, el("span", { class: "rs-track" }, fill), w);
+      list.append(li);
+      return { li, h, w };
+    });
+    function render(i) {
+      const st = RESAMPLE[i];
+      st.rows.forEach((r, k) => {
+        const [base, idx, prime, v, kind] = r;
+        rows[k].h.replaceChildren(base, el("sup", { text: idx + prime }));
+        rows[k].li.style.setProperty("--w", v);
+        rows[k].li.classList.toggle("is-new", kind === "new");
+        rows[k].w.textContent = v.toFixed(2);
+      });
+      cap.textContent = st.cap;
+    }
+    segment($(".seg", root), v => render(+v));
+    render(0);
+  }
+
+  function initCopy() {
+    const btn = $("#copy-bib"), msg = $("#copy-msg"), pre = $("#bibtex");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      const text = pre.textContent;
+      const fallback = () => {
+        const r = document.createRange(); r.selectNodeContents(pre);
+        const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        msg.textContent = "Selected. Press Ctrl+C or ⌘C";
+      };
+      try {
+        navigator.clipboard.writeText(text).then(() => { msg.textContent = "Copied"; setTimeout(() => (msg.textContent = ""), 2400); }, fallback);
+      } catch (e) { fallback(); }
+    });
+  }
+
+  initDyn();
+  initHero();
+  initExplorer();
+  initResample();
+  initLatency();
+  initDumbbell();
+  initBoard();
+  initCopy();
+})();
+</script>
+</body>
+</html>
