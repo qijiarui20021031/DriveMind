@@ -6,7 +6,7 @@ Yan Shi<sup>1</sup>, Kehua Chen<sup>1*</sup>, Jiarui Qi<sup>1</sup>, Yihong Tang
 
 <sup>1</sup>University of Washington · <sup>2</sup>McGill University · <sup>3</sup>University of Michigan · <sup>*</sup>Corresponding authors
 
-**[Project page](https://qijiarui20021031.github.io/DriveMind/)** · **[Paper (PDF)](static/DriveMind_NeurIPS2026.pdf)** · arXiv (coming soon) · Code (coming soon)
+**[Project page](https://qijiarui20021031.github.io/DriveMind/)** · **[Paper (PDF)](static/DriveMind_NeurIPS2026.pdf)** · **[Code](https://github.com/shiyannacl/drivemind)** · arXiv (coming soon)
 
 [![DriveMind project page](assets/og.jpg)](https://qijiarui20021031.github.io/DriveMind/)
 
@@ -21,12 +21,12 @@ On Bench2Drive, adding belief tracking to the same driving pipeline raises the D
 ## Citation
 
 ```bibtex
-@inproceedings{shi2026drivemind,
+@inproceedings{drivemind2026,
   title     = {DriveMind: Mind-Evolving Belief Tracking for
                Closed-Loop Autonomous Driving},
   author    = {Shi, Yan and Chen, Kehua and Qi, Jiarui and
                Tang, Yihong and Liao, Haicheng and Wang, Yinhai},
-  booktitle = {Advances in Neural Information Processing Systems},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
   year      = {2026}
 }
 ```
