@@ -444,11 +444,12 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 }
 
 /* ---------- limitations ---------- */
-.limits{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(24px,5vw,72px);align-items:start}
-@media (max-width:860px){.limits{grid-template-columns:minmax(0,1fr)}}
-.limit-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
-.limit-list li{padding:14px 0;border-bottom:1px solid var(--line);font-size:17px;line-height:1.5;color:var(--ink-2)}
-.limit-list li b{color:var(--ink)}
+/* deliberately quiet: a small label and one muted paragraph, like a footnote */
+.section.section--quiet{padding-block:clamp(36px,4.5vw,52px)}
+.limits{display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr);gap:6px 40px;align-items:baseline}
+.limits h2{font-family:var(--mono);font-size:12.5px;font-weight:500;line-height:1.6;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);max-width:none}
+.limits p{font-size:15px;line-height:1.65;color:var(--muted);max-width:80ch}
+@media (max-width:700px){.limits{grid-template-columns:minmax(0,1fr)}}
 
 /* ---------- cite + footer ---------- */
 .cite-grid{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);gap:clamp(24px,5vw,72px);align-items:start}
@@ -718,19 +719,10 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
   </div>
 </section>
 
-<section class="section" id="limits">
+<section class="section section--quiet" id="limits">
   <div class="wrap limits">
-    <div>
-      <h2>Limitations</h2>
-      <p class="sec-lede" style="font-size:17.5px">The failures we see come mostly from belief updates that arrive too late or from too little visual evidence.</p>
-    </div>
-    <ul class="limit-list">
-      <li><b>Very dense interactions</b> with many agents at once.</li>
-      <li><b>Sudden, fast objects.</b> An agent that appears between two slow updates meets a controller still conditioned on the previous belief.</li>
-      <li><b>Long occlusions</b> that leave too little evidence to correct the belief.</li>
-      <li><b>The scorer can be wrong.</b> It may favour visually unsupported or outdated hypotheses and delay the correction.</li>
-      <li><b>Fixed K and update rate.</b> Adapting both to scene complexity, and adding other agents’ intentions to the hypothesis space, are next steps.</li>
-    </ul>
+    <h2>Limitations</h2>
+    <p>Most failures come from belief updates that arrive too late or from too little visual evidence, as in very dense multi-agent traffic, fast objects that appear between two slow updates, or long occlusions. The scorer can also favour unsupported or outdated hypotheses and delay the correction. The number of hypotheses and the update rate are fixed for now. Adapting them to scene complexity, and adding other agents’ intentions to the hypothesis space, are next steps.</p>
   </div>
 </section>
 
