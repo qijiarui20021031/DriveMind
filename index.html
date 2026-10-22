@@ -52,6 +52,7 @@
   --overlay:rgba(10,12,14,.68);
   --band:#16191d;
   --dyn-other:#59626b;     /* other scenarios in the dark-band chart */
+  --ghost-blend:multiply;  /* heading ghosts: colour fringes only, text stays solid */
   /* the four maneuvers: light-surface steps, then dark-surface steps */
   --stop:#e34948; --decel:#eda100; --go:#1baf7a; --lane:#2a78d6;
   --stop-d:#d63a3f; --decel-d:#c98500; --go-d:#199e70; --lane-d:#3987e5;
@@ -70,6 +71,7 @@
     --dot-base:#69727b; --bar-other:#363d44; --bar-mid:#737d86;
     --monitor:#1a1e23; --monitor-2:#23282e; --monitor-line:#363d45; --band:#14171b;
     --stop:#d63a3f; --decel:#c98500; --go:#199e70; --lane:#3987e5;
+    --ghost-blend:screen;
     color-scheme:dark;
   }
 }
@@ -79,6 +81,7 @@
   --dot-base:#69727b; --bar-other:#363d44; --bar-mid:#737d86;
   --monitor:#1a1e23; --monitor-2:#23282e; --monitor-line:#363d45; --band:#14171b;
   --stop:#d63a3f; --decel:#c98500; --go:#199e70; --lane:#3987e5;
+  --ghost-blend:screen;
   color-scheme:dark;
 }
 
@@ -96,7 +99,7 @@ p{margin:0;text-wrap:pretty}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .mono{font-family:var(--mono)}
 [data-m="stop"]{--m:var(--stop)} [data-m="decel"]{--m:var(--decel)} [data-m="go"]{--m:var(--go)} [data-m="lane"]{--m:var(--lane)}
-.on-dark{--stop:var(--stop-d);--decel:var(--decel-d);--go:var(--go-d);--lane:var(--lane-d);color:var(--on-monitor)}
+.on-dark{--stop:var(--stop-d);--decel:var(--decel-d);--go:var(--go-d);--lane:var(--lane-d);--ghost-blend:screen;color:var(--on-monitor)}
 .on-dark :focus-visible{outline-color:var(--on-monitor)}
 
 /* ---------- navigation ---------- */
@@ -121,6 +124,29 @@ p{margin:0;text-wrap:pretty}
 .ghost{position:absolute;left:0;top:0;opacity:0;pointer-events:none;color:var(--m);animation:converge 1.7s cubic-bezier(.16,.8,.2,1) .25s both}
 .ghost.g1{--dx:-.07em;--dy:-.06em} .ghost.g2{--dx:.05em;--dy:-.03em} .ghost.g3{--dx:-.04em;--dy:.05em} .ghost.g4{--dx:.08em;--dy:.04em}
 @keyframes converge{0%{opacity:.62;transform:translate(var(--dx),var(--dy))}70%{opacity:.3}100%{opacity:0;transform:translate(0,0)}}
+
+/* ---------- belief-resolve accents ----------
+   One visual idea, reused sparingly: four maneuver-coloured readings that
+   converge into one. Decoration only; the text underneath is always visible. */
+.resolve{position:relative}
+.rg{position:absolute;inset:0;color:var(--m);opacity:0;mix-blend-mode:var(--ghost-blend);pointer-events:none;user-select:none;-webkit-user-select:none}
+.rg.g1{--dx:-.06em;--dy:-.04em} .rg.g2{--dx:.045em;--dy:-.025em} .rg.g3{--dx:-.04em;--dy:.045em} .rg.g4{--dx:.065em;--dy:.035em}
+.resolve.is-on .rg{animation:resolve 1.4s cubic-bezier(.16,.8,.2,1) both}
+@keyframes resolve{
+  0%{opacity:0;transform:translate(calc(var(--dx) * 1.4),calc(var(--dy) * 1.4))}
+  14%{opacity:.7;transform:translate(var(--dx),var(--dy))}
+  70%{opacity:.2}
+  100%{opacity:0;transform:translate(0,0)}
+}
+/* nav mark: four strands draw in and merge; on hover they part briefly and rejoin */
+.brand .s{stroke-dasharray:1 1.2;stroke-dashoffset:0}
+.brand svg:not(.ready) .s{animation:strand-in .95s cubic-bezier(.2,.7,.2,1) both}
+.brand svg:not(.ready) .s:nth-child(2){animation-delay:.08s}
+.brand svg:not(.ready) .s:nth-child(3){animation-delay:.16s}
+.brand svg:not(.ready) .s:nth-child(4){animation-delay:.24s}
+.brand svg.ready.fan .s{animation:fan .9s cubic-bezier(.3,.6,.2,1)}
+@keyframes strand-in{from{stroke-dashoffset:1.1}to{stroke-dashoffset:0}}
+@keyframes fan{0%,100%{transform:translate(0,0)}35%{transform:translate(0,var(--fy))}}
 .subtitle{font-weight:650;font-size:clamp(21px,2.5vw,29px);line-height:1.2;letter-spacing:-.012em;margin:18px 0 0;max-width:26ch;text-wrap:balance}
 .authors{margin-top:28px;font-size:16.5px;line-height:1.6;font-weight:600;max-width:38em}
 .authors .a{white-space:nowrap}
@@ -304,10 +330,9 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 .hyp-bar span{display:block;height:100%;width:calc(var(--w,0) * 100%);background:var(--m);border-radius:2px;transition:width .65s cubic-bezier(.2,.7,.2,1)}
 .action{margin-top:18px}
 .action .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--on-monitor-muted)}
-.stack{display:flex;gap:2px;height:14px;margin-top:8px}
-.stack span{height:100%;background:var(--m)}
-.stack span:first-child{border-radius:3px 0 0 3px} .stack span:last-child{border-radius:0 3px 3px 0}
-.stack span:only-child{border-radius:3px}
+.stack{display:flex;height:14px;margin-top:8px;border-radius:3px;overflow:hidden}
+.stack span{flex:var(--w,0) 1 0;min-width:0;height:100%;background:var(--m);box-shadow:inset 2px 0 0 var(--band);transition:flex-grow 1.2s cubic-bezier(.2,.7,.2,1)}
+.stack span:first-child{box-shadow:none}
 .stack-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--on-monitor-2)}
 .stack-legend li{display:flex;align-items:center;gap:7px}
 .stack-legend b{font-family:var(--mono);font-weight:500;color:var(--on-monitor)}
@@ -435,7 +460,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 @media (prefers-reduced-motion: reduce){
   html{scroll-behavior:auto}
   *,*::before,*::after{animation:none!important;transition:none!important}
-  .ghost{display:none}
+  .ghost,.rg{display:none}
 }
 </style>
 <style>[hidden]{display:none!important}</style>
@@ -445,10 +470,10 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
   <div class="wrap">
     <a class="brand" href="#top" aria-label="DriveMind, back to top">
       <svg viewBox="0 0 32 32" aria-hidden="true" fill="none" stroke-linecap="round">
-        <path d="M3 6.5C11 6.5 13 16 21 16" style="stroke:var(--stop)" stroke-width="2.6"/>
-        <path d="M3 12.2C11 12.2 13 16 21 16" style="stroke:var(--decel)" stroke-width="2.6"/>
-        <path d="M3 19.8C11 19.8 13 16 21 16" style="stroke:var(--go)" stroke-width="2.6"/>
-        <path d="M3 25.5C11 25.5 13 16 21 16" style="stroke:var(--lane)" stroke-width="2.6"/>
+        <path class="s" pathLength="1" d="M3 6.5C11 6.5 13 16 21 16" style="stroke:var(--stop);--fy:-4.2px" stroke-width="2.6"/>
+        <path class="s" pathLength="1" d="M3 12.2C11 12.2 13 16 21 16" style="stroke:var(--decel);--fy:-1.7px" stroke-width="2.6"/>
+        <path class="s" pathLength="1" d="M3 19.8C11 19.8 13 16 21 16" style="stroke:var(--go);--fy:1.7px" stroke-width="2.6"/>
+        <path class="s" pathLength="1" d="M3 25.5C11 25.5 13 16 21 16" style="stroke:var(--lane);--fy:4.2px" stroke-width="2.6"/>
         <path d="M20 16H29.5" style="stroke:var(--ink)" stroke-width="3.4"/>
       </svg>
       <span>DriveMind</span>
@@ -536,7 +561,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 <main>
 <section class="section" id="idea">
   <div class="wrap">
-    <h2>One reading per frame commits too early</h2>
+    <h2 data-resolve>One reading per frame commits too early</h2>
     <div class="prose">
       <p>Traffic is full of ambiguity. A slowing car may be yielding, preparing to turn, or reacting to an obstacle the ego vehicle cannot see. A pedestrian near the curb may cross, or may keep waiting.</p>
       <p>Most MLLM-based drivers produce one rationale per frame and act on it. In closed loop, that action shapes the next observation, so a wrong first guess can reinforce itself before the evidence arrives. DriveMind carries a weighted set of hypotheses from frame to frame instead.</p>
@@ -557,7 +582,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 <section class="section" id="method">
   <div class="wrap">
     <p class="eyebrow">Method</p>
-    <h2>A particle filter whose particles are sentences</h2>
+    <h2 data-resolve>A particle filter whose particles are sentences</h2>
     <p class="sec-lede">The belief is a small set of natural-language hypotheses, four in the main experiments, each a possible reading of the scene with a weight. A vision-language model (<span style="white-space:nowrap">Qwen3-VL-2B</span>) updates it about twice per second in three moves borrowed from particle filtering, while a fast controller steers from the latest belief.</p>
 
     <div class="steps">
@@ -594,7 +619,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
   <div class="wrap">
     <div class="lane-mark" aria-hidden="true"></div>
     <p class="eyebrow">Closed-loop cases · Bench2Drive in CARLA</p>
-    <h2>Watch the belief settle, frame by frame</h2>
+    <h2 data-resolve>Watch the belief settle, frame by frame</h2>
     <p class="sec-lede">Each case shows the camera frames and the four hypotheses with their weights, as reported in the paper. Each hypothesis proposes one maneuver: <span class="mk" data-m="stop"><i class="ikey"></i>stop</span>, <span class="mk" data-m="decel"><i class="ikey"></i>decelerate</span>, <span class="mk" data-m="go"><i class="ikey"></i>go straight</span> or <span class="mk" data-m="lane"><i class="ikey"></i>lane change</span>. Type weight follows belief, so a hypothesis grows bolder as the evidence supports it and fades as it loses support.</p>
 
     <div class="tabs" role="tablist" aria-label="Driving cases" id="case-tabs"></div>
@@ -637,7 +662,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 <section class="section" id="results">
   <div class="wrap">
     <p class="eyebrow">Bench2Drive · 220 routes · closed loop</p>
-    <h2>The largest gains come where intent is ambiguous</h2>
+    <h2 data-resolve>The largest gains come where intent is ambiguous</h2>
     <p class="sec-lede">Against the same VLM and diffusion controller without belief tracking, DriveMind raises the Driving Score in all nine scenario categories. The biggest gains are in oncoming traffic and at unsignalized intersections, where the car has to infer what other road users will do.</p>
 
     <div class="controls">
@@ -1082,7 +1107,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
       nextBtn.disabled = p === seq.length - 1;
     }
 
-    function select(i, focusTab) {
+    function select(i, fromUser) {
       setPlaying(false);
       c = CASES[i]; seq = frameSeq(c);
       tabs.forEach((b, j) => { b.setAttribute("aria-selected", String(j === i)); b.tabIndex = j === i ? 0 : -1; });
@@ -1105,10 +1130,19 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
         const g = el("div", { class: "strip-stage", style: `flex:${s.f.length} 1 0` }, el("span", { class: "strip-t", text: `t = ${s.t}` }), frames);
         stripEl.append(g);
       });
-      // weighted action at the last step
+      // weighted action at the last step. When the reader switches cases, the bar
+      // settles from the uniform prior (0.25 each) to the final belief.
       const last = c.stages[c.stages.length - 1].w;
-      stackEl.replaceChildren();
-      last.forEach((v, k) => { if (v > 0) stackEl.append(el("span", { "data-m": MAN[k].key, style: `flex:${v} 1 0` })); });
+      const segs = MAN.map(m => el("span", { "data-m": m.key }));
+      stackEl.replaceChildren(...segs);
+      const setW = ws => segs.forEach((s, k) => s.style.setProperty("--w", ws[k]));
+      if (fromUser && !RM) {
+        setW([.25, .25, .25, .25]);
+        void stackEl.offsetWidth;
+        requestAnimationFrame(() => requestAnimationFrame(() => setW(last)));
+      } else {
+        setW(last);
+      }
       stackEl.setAttribute("aria-label", "Weighted action: " + MAN.map((m, k) => `${m.label} ${f2(last[k])}`).join(", "));
       stackLeg.replaceChildren(...MAN.map((m, k) => el("li", { "data-m": m.key }, el("i", { class: "key" }), m.label, " ", el("b", { text: f2(last[k]) }))));
       preload(c);
@@ -1411,12 +1445,67 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
     });
   }
 
+  /* ------------------------------------------------------------------
+     BELIEF-RESOLVE ACCENTS
+     ------------------------------------------------------------------ */
+  const KEYS = ["stop", "decel", "go", "lane"];
+
+  // Section headings: four faint maneuver-coloured copies converge once, on first view.
+  function initResolve() {
+    if (RM || !("IntersectionObserver" in window)) return;
+    const heads = $$("h2[data-resolve]");
+    heads.forEach(h => {
+      const text = h.textContent;
+      h.classList.add("resolve");
+      KEYS.forEach((k, i) => h.append(el("span", { class: `rg g${i + 1}`, "data-m": k, "aria-hidden": "true", text })));
+    });
+    const io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add("is-on");
+      io.unobserve(e.target);
+    }), { threshold: 0.6 });
+    // start after the hero title has settled, so two effects never compete
+    setTimeout(() => heads.forEach(h => io.observe(h)), 1600);
+  }
+
+  // Nav mark: strands draw in on load; on hover they part briefly and rejoin.
+  function initBrand() {
+    const svg = $(".brand svg");
+    if (!svg) return;
+    setTimeout(() => svg.classList.add("ready"), RM ? 0 : 1400);
+    if (RM) return;
+    $(".brand").addEventListener("pointerenter", () => {
+      if (!svg.classList.contains("ready") || svg.classList.contains("fan")) return;
+      svg.classList.add("fan");
+      setTimeout(() => svg.classList.remove("fan"), 950);
+    });
+  }
+
+  // Hero title: hovering replays the convergence of "Mind" (pointer devices only).
+  function initTitle() {
+    if (RM || !window.matchMedia("(hover: hover)").matches) return;
+    const title = $(".title");
+    if (!title) return;
+    const ghosts = $$(".ghost", title);
+    let busy = true;
+    setTimeout(() => (busy = false), 2100);
+    title.addEventListener("pointerenter", () => {
+      if (busy) return;
+      busy = true;
+      ghosts.forEach(g => { g.style.animation = "none"; void g.offsetWidth; g.style.animation = ""; });
+      setTimeout(() => (busy = false), 2100);
+    });
+  }
+
   initDyn();
   initHero();
   initExplorer();
   initDumbbell();
   initBoard();
   initCopy();
+  initResolve();
+  initBrand();
+  initTitle();
 })();
 </script>
 </body>
