@@ -53,6 +53,7 @@
   --band:#16191d;
   --dyn-other:#59626b;     /* other scenarios in the dark-band chart */
   --ghost-blend:multiply;  /* heading ghosts: colour fringes only, text stays solid */
+  --video-bg:#0b0d10;      /* letterbox behind the case videos (dark in both themes) */
   /* the four maneuvers: light-surface steps, then dark-surface steps */
   --stop:#e34948; --decel:#eda100; --go:#1baf7a; --lane:#2a78d6;
   --stop-d:#d63a3f; --decel-d:#c98500; --go-d:#199e70; --lane-d:#3987e5;
@@ -266,9 +267,6 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 .seg button:hover{color:var(--ink)}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 
-/* ---------- inline maneuver key (used in running text) ---------- */
-.mk{white-space:nowrap}
-.ikey{display:inline-block;width:.62em;height:.62em;border-radius:2px;background:var(--m);margin:0 .32em 0 .06em;vertical-align:.04em}
 
 /* ---------- horizontal bar charts ---------- */
 /* bars are drawn inside .hb-plot, which leaves 104px on the right for value labels */
@@ -311,51 +309,25 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 .tab:hover{color:var(--on-monitor)}
 .tab[aria-selected="true"]{color:var(--on-monitor)}
 .tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;border-radius:2px 2px 0 0;background:var(--on-monitor)}
-.explorer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:clamp(22px,4vw,48px);margin-top:28px;align-items:start}
-@media (max-width:960px){.explorer{grid-template-columns:minmax(0,1fr)}}
-.ex-left{min-width:0}
-@media (min-width:961px){.ex-left{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px)}}
-.ex-meta{font-size:15.5px;color:var(--on-monitor-2);margin-top:14px}
+/* video player: one clip per tab, native controls (seek, pause, time, volume, fullscreen) plus Replay */
+.vplayer{margin:28px 0 0}
+.vp-screen{aspect-ratio:var(--ar,16/9);background:var(--video-bg);border:1px solid var(--monitor-line);border-radius:12px}
+.vp-screen video{display:block;width:100%;height:100%;object-fit:contain;background:var(--video-bg)}
+.vp-screen .tag{pointer-events:none}
+.vp-missing{position:absolute;inset:0;margin:0;display:grid;place-items:center;font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--on-monitor-muted);background:var(--monitor)}
+.vp-foot{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 24px;flex-wrap:wrap;margin-top:14px}
+.ex-meta{font-size:15.5px;line-height:1.5;color:var(--on-monitor-2);max-width:72ch;min-width:0;flex:1 1 320px}
 .ex-meta b{color:var(--on-monitor);font-weight:700}
-.strip{display:flex;gap:10px;margin-top:14px}
-.strip-stage{min-width:0;display:flex;flex-direction:column;gap:6px}
-.strip-t{font-family:var(--mono);font-size:11.5px;color:var(--on-monitor-muted);white-space:nowrap}
-.strip-stage.is-on .strip-t{color:var(--on-monitor)}
-.strip-frames{display:flex;gap:3px}
-.thumb{flex:1 1 0;min-width:0;padding:0;border:0;background:var(--monitor-2);border-radius:3px;overflow:hidden;cursor:pointer;aspect-ratio:16/9;opacity:.5;outline-offset:2px;transition:opacity .2s}
-.thumb img{width:100%;height:100%;object-fit:cover}
-.thumb:hover{opacity:.85}
-.thumb[aria-current="true"]{opacity:1;box-shadow:0 0 0 2px var(--on-monitor)}
-.ex-ctrl{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
-.ex-right{min-width:0}
-.ex-step{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-family:var(--mono);font-size:12.5px;color:var(--on-monitor-muted);padding-bottom:10px;border-bottom:1px solid var(--monitor-line)}
-.ex-step b{color:var(--on-monitor);font-weight:600;font-size:14px}
-.hyps{list-style:none;margin:0;padding:0}
-.hyp{display:grid;grid-template-columns:minmax(0,1fr) 46px;gap:4px 14px;padding:13px 0 12px;border-bottom:1px solid var(--monitor-line)}
-.hyp-top{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--on-monitor-muted)}
-.hyp-top .mchip{display:inline-flex;align-items:center;gap:7px;font-family:var(--sans);font-size:13px;letter-spacing:0;font-weight:700;color:var(--on-monitor-2)}
-.hyp-w{grid-row:1 / span 2;grid-column:2;align-self:start;text-align:right;font-family:var(--mono);font-size:15px;font-variant-numeric:tabular-nums;color:var(--on-monitor);padding-top:1px}
-.hyp-text{font-size:16px;line-height:1.45;font-weight:var(--fw,400);opacity:var(--o,1);transition:font-weight .65s cubic-bezier(.2,.7,.2,1),opacity .65s}
-.hyp-bar{grid-column:1 / -1;height:4px;background:var(--monitor-2);border-radius:2px;margin-top:6px}
-.hyp-bar span{display:block;height:100%;width:calc(var(--w,0) * 100%);background:var(--m);border-radius:2px;transition:width .65s cubic-bezier(.2,.7,.2,1)}
-.action{margin-top:18px}
-.action .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--on-monitor-muted)}
-.stack{display:flex;height:14px;margin-top:8px;border-radius:3px;overflow:hidden}
-.stack span{flex:var(--w,0) 1 0;min-width:0;height:100%;background:var(--m);box-shadow:inset 2px 0 0 var(--band);transition:flex-grow 1.2s cubic-bezier(.2,.7,.2,1)}
-.stack span:first-child{box-shadow:none}
-.stack-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--on-monitor-2)}
-.stack-legend li{display:flex;align-items:center;gap:7px}
-.stack-legend b{font-family:var(--mono);font-weight:500;color:var(--on-monitor)}
-.ex-note{margin-top:16px;font-size:15.5px;line-height:1.5;color:var(--on-monitor-2)}
 .on-dark .icon-btn{font-size:13.5px}
 
 /* belief dynamics (small multiples) */
 .dyn{margin-top:clamp(56px,7vw,80px);position:relative}
 .dyn > p{margin-top:12px;max-width:66ch;color:var(--on-monitor-2)}
-.dyn-legend{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:18px;font-size:13.5px;color:var(--on-monitor-2)}
-.dyn-legend span{display:inline-flex;align-items:center;gap:8px}
-.dyn-legend i{display:inline-block;width:18px;height:0;border-top:2px solid var(--on-monitor-muted)}
-.dyn-legend i.sel{border-top-color:var(--on-monitor);border-top-width:2.5px}
+#dyn-seg{margin-top:18px}
+.on-dark .seg{background:var(--monitor);border-color:var(--monitor-line)}
+.on-dark .seg button{color:var(--on-monitor-muted)}
+.on-dark .seg button:hover{color:var(--on-monitor)}
+.on-dark .seg button[aria-pressed="true"]{background:var(--on-monitor);color:var(--band)}
 .dyn-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:14px}
 @media (max-width:860px){.dyn-grid{grid-template-columns:minmax(0,1fr)}}
 .dyn-panel{background:var(--monitor);border:1px solid var(--monitor-line);border-radius:10px;padding:12px 10px 6px;position:relative;min-width:0}
@@ -366,7 +338,6 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 .dt{font-family:var(--mono);font-size:10.5px;fill:var(--on-monitor-muted)}
 .dref{stroke:var(--on-monitor-muted);stroke-width:1;stroke-dasharray:4 4}
 .dl{fill:none;stroke:var(--dyn-other);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
-.measuring,.measuring *{transition:none!important}
 .dl.sel{stroke:var(--on-monitor);stroke-width:2.4}
 .ddot{fill:var(--on-monitor);stroke:var(--monitor);stroke-width:2}
 .dcross{stroke:var(--on-monitor-muted);stroke-width:1}
@@ -632,40 +603,24 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
     <div class="lane-mark" aria-hidden="true"></div>
     <p class="eyebrow">Closed-loop cases · Bench2Drive in CARLA</p>
     <h2 data-resolve>Watch the belief settle, frame by frame</h2>
-    <p class="sec-lede">Each case shows the camera frames and the four hypotheses with their weights, as reported in the paper. Each hypothesis proposes one maneuver: <span class="mk" data-m="stop"><i class="ikey"></i>stop</span>, <span class="mk" data-m="decel"><i class="ikey"></i>decelerate</span>, <span class="mk" data-m="go"><i class="ikey"></i>go straight</span> or <span class="mk" data-m="lane"><i class="ikey"></i>lane change</span>. Type weight follows belief, so a hypothesis grows bolder as the evidence supports it and fades as it loses support.</p>
+    <p class="sec-lede">Each video is a full closed-loop run in CARLA. DriveMind’s hypotheses and their scores are revised many times along the way. Drag the progress bar to look at any moment, or replay a run from the start.</p>
 
     <div class="tabs" role="tablist" aria-label="Driving cases" id="case-tabs"></div>
-    <div class="explorer" id="explorer" role="tabpanel">
-      <div class="ex-left">
-        <div class="screen">
-          <img id="ex-frame" alt="" width="400" height="225">
-          <span class="tag l">CAM_FRONT</span><span class="tag r" id="ex-fc"></span>
-        </div>
-        <div class="strip" id="ex-strip"></div>
-        <div class="ex-ctrl">
-          <button class="icon-btn" type="button" id="ex-prev"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M8.5 1.5 3.5 6l5 4.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>Earlier</span></button>
-          <button class="icon-btn" type="button" id="ex-play" aria-label="Play from the first frame"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5v9l8-4.5z" fill="currentColor"/></svg><span>Play</span></button>
-          <button class="icon-btn" type="button" id="ex-next"><span>Later</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3.5 1.5 8.5 6l-5 4.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
-          <button class="icon-btn" type="button" id="ex-restart" aria-label="Restart from the first frame and play"><svg viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.1 2.66A4.2 4.2 0 1 1 3.9 2.66"/><path d="M1.54 2.24 3.9 2.66 3.08 4.92"/></svg><span>Restart</span></button>
-        </div>
-        <p class="ex-meta" id="ex-meta"></p>
+    <figure class="vplayer" id="vplayer" role="tabpanel">
+      <div class="screen vp-screen" id="vp-screen">
+        <video id="vp-video" controls playsinline preload="metadata"></video>
+        <p class="vp-missing" id="vp-missing" hidden>Video coming soon</p>
       </div>
-      <div class="ex-right">
-        <div class="ex-step"><span>Reasoning step <b id="ex-t"></b></span><span id="ex-fig"></span></div>
-        <ol class="hyps" id="ex-hyps"></ol>
-        <div class="action">
-          <span class="k">Weighted action at the last step</span>
-          <div class="stack" id="ex-stack" role="img"></div>
-          <ul class="stack-legend" id="ex-stack-legend"></ul>
-        </div>
-        <p class="ex-note" id="ex-note"></p>
-      </div>
-    </div>
+      <figcaption class="vp-foot">
+        <p class="ex-meta" id="vp-note"></p>
+        <button class="icon-btn" type="button" id="vp-replay" aria-label="Replay from the beginning"><svg viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.1 2.66A4.2 4.2 0 1 1 3.9 2.66"/><path d="M1.54 2.24 3.9 2.66 3.08 4.92"/></svg><span>Replay</span></button>
+      </figcaption>
+    </figure>
 
     <div class="dyn" id="dyn">
       <h3>How fast belief concentrates</h3>
       <p>Per-step belief statistics for four of the scenarios, read from the paper's Figure 3. Entropy falls as the scene becomes less ambiguous and the leading weight climbs. The night scene stays uncertain, with its leading weight levelling off near 0.6.</p>
-      <div class="dyn-legend" id="dyn-legend"></div>
+      <div class="seg" role="group" aria-label="Scenario to highlight" id="dyn-seg"></div>
       <div class="dyn-grid" id="dyn-grid"></div>
       <details class="tv"><summary>Show as table</summary><div class="tv-scroll" id="dyn-table"></div></details>
     </div>
@@ -951,7 +906,6 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 
   const frameSrc = (c, i) => `assets/cases/${c.id}/${pad(i)}.jpg`;
   const fw = w => Math.round(330 + 540 * w);              // belief -> font weight
-  const op = w => (0.6 + 0.4 * Math.sqrt(w)).toFixed(3); // belief -> opacity
   const isUniform = w => w.every(v => Math.abs(v - w[0]) < 1e-9);
   function frameSeq(c) {
     const seq = [];
@@ -1024,167 +978,107 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
   }
 
   /* ------------------------------------------------------------------
-     CASE EXPLORER (dark band)
+     CLOSED-LOOP VIDEOS (dark band)
+     Videos are found automatically, in order:
+       assets/videos/example1.mp4, example2.mp4, example3.mp4, ...
+     Each one becomes a tab (Example 1, Example 2, ...). The first missing
+     number ends the list, so adding example4.mp4 adds a fourth tab.
+     Optional: a still image with the same name (example1.jpg) is shown before
+     playback, and a sentence in VIDEO_NOTES is shown under the video.
+     Use MP4 files encoded with H.264 so every browser can play them.
      ------------------------------------------------------------------ */
-  function initExplorer() {
+  const VIDEO_DIR = "assets/videos/";
+  const VIDEO_MAX = 20;
+  const VIDEO_NOTES = {
+    // 1: "One sentence about Example 1.",
+  };
+
+  // Ask whether a file exists. Pages opened straight from disk cannot use fetch,
+  // so in that case the browser's own media loader answers instead.
+  function fileExists(src, kind) {
+    return fetch(src, { method: "HEAD", cache: "no-cache" })
+      .then(r => (r.status === 405 || r.status === 501) ? fetch(src, { headers: { Range: "bytes=0-0" }, cache: "no-cache" }) : r)
+      .then(r => r.ok)
+      .catch(() => new Promise(resolve => {
+        const m = kind === "video" ? document.createElement("video") : new Image();
+        let settled = false;
+        const done = ok => { if (settled) return; settled = true; clearTimeout(timer); if (kind === "video") { m.removeAttribute("src"); m.load(); } resolve(ok); };
+        const timer = setTimeout(() => done(false), 6000);
+        if (kind === "video") { m.preload = "metadata"; m.muted = true; m.onloadedmetadata = () => done(true); }
+        else m.onload = () => done(true);
+        m.onerror = () => done(false);
+        m.src = src;
+      }));
+  }
+
+  function initPlayer() {
     const tabsEl = $("#case-tabs");
     if (!tabsEl) return;
-    const frameEl = $("#ex-frame"), fcEl = $("#ex-fc"), stripEl = $("#ex-strip"), hypsEl = $("#ex-hyps");
-    const tEl = $("#ex-t"), figEl = $("#ex-fig"), metaEl = $("#ex-meta"), noteEl = $("#ex-note");
-    const stackEl = $("#ex-stack"), stackLeg = $("#ex-stack-legend");
-    const prevBtn = $("#ex-prev"), nextBtn = $("#ex-next"), playBtn = $("#ex-play");
-    let c = null, seq = [], pos = 0, timer = null, playing = false;
+    const video = $("#vp-video"), screen = $("#vp-screen"), missing = $("#vp-missing");
+    const note = $("#vp-note"), panel = $("#vplayer"), replay = $("#vp-replay");
+    const items = [], tabs = [];
+    let cur = -1;
+    const play = () => { const p = video.play(); if (p && p.catch) p.catch(() => {}); };
 
-    const tabs = CASES.map((cs, i) => {
-      const b = el("button", { class: "tab", role: "tab", id: `tab-${cs.id}`, "aria-selected": "false", "aria-controls": "explorer", tabindex: "-1", type: "button", text: cs.tab });
+    function addTab(item) {
+      const i = items.length;
+      items.push(item);
+      const b = el("button", { class: "tab", role: "tab", id: `tab-example${item.n}`, "aria-selected": "false", "aria-controls": "vplayer", tabindex: "-1", type: "button", text: `Example ${item.n}` });
       b.addEventListener("click", () => select(i, true));
       b.addEventListener("keydown", e => {
         if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
         e.preventDefault();
-        const j = (i + (e.key === "ArrowRight" ? 1 : -1) + CASES.length) % CASES.length;
+        const j = (i + (e.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
         select(j, true); tabs[j].focus();
       });
       tabsEl.append(b);
-      return b;
-    });
-
-    // hypothesis rows are built once and reused
-    const hypRows = MAN.map((m, k) => {
-      const w = el("span", { class: "hyp-w" });
-      const text = el("p", { class: "hyp-text" });
-      const bar = el("span", { class: "hyp-bar" }, el("span"));
-      const li = el("li", { class: "hyp", "data-m": m.key },
-        el("div", { class: "hyp-top" }, el("span", { text: `H${k + 1}` }), el("span", { class: "mchip" }, el("i", { class: "key" }), m.label)),
-        w, text, bar);
-      hypsEl.append(li);
-      return { li, w, text };
-    });
-
-    function setPlaying(on) {
-      playing = on;
-      playBtn.innerHTML = on
-        ? '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5h2v9H3zM7 1.5h2v9H7z" fill="currentColor"/></svg><span>Pause</span>'
-        : '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5v9l8-4.5z" fill="currentColor"/></svg><span>Play</span>';
-      playBtn.setAttribute("aria-label", on ? "Pause" : "Play from the first frame");
-      if (!on) clearTimeout(timer);
-    }
-    function step() {
-      clearTimeout(timer);
-      if (!playing) return;
-      if (pos >= seq.length - 1) { setPlaying(false); return; }
-      timer = setTimeout(() => { show(pos + 1); step(); }, 1000);
-    }
-
-    function lockHeight() {
-      // Reserve the height of the tallest reasoning step, so the page does not jump
-      // when the hypothesis text and its weight change. Transitions are off while measuring.
-      hypsEl.classList.add("measuring");
-      hypsEl.style.minHeight = "";
-      let max = 0;
-      c.stages.forEach(s => {
-        hypRows.forEach((r, k) => { r.text.textContent = s.h[k]; r.text.style.setProperty("--fw", fw(s.w[k])); });
-        max = Math.max(max, hypsEl.offsetHeight);
-      });
-      hypsEl.style.minHeight = max + "px";
-      show(pos);
-      void hypsEl.offsetHeight;
-      requestAnimationFrame(() => requestAnimationFrame(() => hypsEl.classList.remove("measuring")));
-    }
-
-    function show(p) {
-      pos = p;
-      const { si, f } = seq[p], s = c.stages[si];
-      frameEl.src = frameSrc(c, f);
-      frameEl.alt = `Front camera, ${c.tab.toLowerCase()}, frame ${f} of ${c.frames}`;
-      fcEl.textContent = `frame ${pad(f)} / ${pad(c.frames)}`;
-      tEl.textContent = `t = ${s.t}`;
-      hypRows.forEach((r, k) => {
-        r.text.textContent = s.h[k];
-        r.li.style.setProperty("--w", s.w[k]);
-        r.text.style.setProperty("--fw", fw(s.w[k]));
-        r.text.style.setProperty("--o", op(s.w[k]));
-        r.w.textContent = f2(s.w[k]);
-      });
-      $$(".thumb", stripEl).forEach((t, i) => t.setAttribute("aria-current", String(i === p)));
-      $$(".strip-stage", stripEl).forEach((g, i) => g.classList.toggle("is-on", i === si));
-      prevBtn.disabled = si === 0 && seq[p].fi === 0;
-      nextBtn.disabled = p === seq.length - 1;
+      tabs.push(b);
     }
 
     function select(i, fromUser) {
-      setPlaying(false);
-      c = CASES[i]; seq = frameSeq(c);
+      if (i === cur) return;
+      cur = i;
+      const v = items[i];
       tabs.forEach((b, j) => { b.setAttribute("aria-selected", String(j === i)); b.tabIndex = j === i ? 0 : -1; });
-      $("#explorer").setAttribute("aria-labelledby", `tab-${c.id}`);
-      figEl.textContent = c.fig;
-      metaEl.replaceChildren(el("b", { text: c.tab + ". " }), c.setting);
-      noteEl.textContent = c.note;
-      // filmstrip grouped by reasoning step
-      stripEl.replaceChildren();
-      let idx = 0;
-      c.stages.forEach(s => {
-        const frames = el("div", { class: "strip-frames" });
-        s.f.forEach(f => {
-          const p = idx++;
-          const b = el("button", { class: "thumb", type: "button", "aria-label": `Frame ${f}, reasoning step t = ${s.t}` },
-            el("img", { src: frameSrc(c, f), alt: "", loading: "lazy", width: "400", height: "225" }));
-          b.addEventListener("click", () => { setPlaying(false); show(p); });
-          frames.append(b);
-        });
-        const g = el("div", { class: "strip-stage", style: `flex:${s.f.length} 1 0` }, el("span", { class: "strip-t", text: `t = ${s.t}` }), frames);
-        stripEl.append(g);
-      });
-      // weighted action at the last step. When the reader switches cases, the bar
-      // settles from the uniform prior (0.25 each) to the final belief.
-      const last = c.stages[c.stages.length - 1].w;
-      const segs = MAN.map(m => el("span", { "data-m": m.key }));
-      stackEl.replaceChildren(...segs);
-      const setW = ws => segs.forEach((s, k) => s.style.setProperty("--w", ws[k]));
-      if (fromUser && !RM) {
-        setW([.25, .25, .25, .25]);
-        void stackEl.offsetWidth;
-        requestAnimationFrame(() => requestAnimationFrame(() => setW(last)));
-      } else {
-        setW(last);
-      }
-      stackEl.setAttribute("aria-label", "Weighted action: " + MAN.map((m, k) => `${m.label} ${f2(last[k])}`).join(", "));
-      stackLeg.replaceChildren(...MAN.map((m, k) => el("li", { "data-m": m.key }, el("i", { class: "key" }), m.label, " ", el("b", { text: f2(last[k]) }))));
-      preload(c);
-      pos = seq.length - 1;
-      lockHeight();
-      highlightDyn(c.dyn);
+      panel.setAttribute("aria-labelledby", `tab-example${v.n}`);
+      video.pause();
+      missing.hidden = true;
+      if (v.poster) video.poster = v.poster; else video.removeAttribute("poster");
+      video.src = v.src;
+      video.load();
+      video.setAttribute("aria-label", `Example ${v.n}, closed-loop driving video`);
+      const text = VIDEO_NOTES[v.n];
+      note.replaceChildren(el("b", { text: text ? `Example ${v.n}. ` : `Example ${v.n}` }), text || "");
+      if (fromUser) play();   // a tab click counts as a user gesture, so playback may start
     }
 
-    // Earlier / Later move one reasoning step and show that step's last frame.
-    const lastOf = si => seq.findIndex(q => q.si === si && q.fi === c.stages[si].f.length - 1);
-    prevBtn.addEventListener("click", () => {
-      setPlaying(false);
-      const { si } = seq[pos];
-      show(si === 0 ? 0 : lastOf(si - 1));
+    // fit the frame to the clip's own aspect ratio once it is known
+    video.addEventListener("loadedmetadata", () => {
+      if (video.videoWidth && video.videoHeight) screen.style.setProperty("--ar", `${video.videoWidth} / ${video.videoHeight}`);
     });
-    nextBtn.addEventListener("click", () => {
-      setPlaying(false);
-      const { si } = seq[pos];
-      show(si === c.stages.length - 1 ? seq.length - 1 : lastOf(si + 1));
-    });
-    playBtn.addEventListener("click", () => {
-      if (playing) { setPlaying(false); return; }
-      setPlaying(true);
-      if (pos >= seq.length - 1) show(0);
-      step();
-    });
-    // Restart: back to the first frame of this case and play through automatically.
-    $("#ex-restart").addEventListener("click", () => {
-      setPlaying(false);
-      show(0);
-      setPlaying(true);
-      step();
-    });
+    video.addEventListener("error", () => { if (video.getAttribute("src")) missing.hidden = false; });
+    replay.addEventListener("click", () => { if (!items.length) return; video.currentTime = 0; play(); });
+    // pause when the player scrolls out of view
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(es => { if (!es[0].isIntersecting && !video.paused) video.pause(); }, { threshold: 0.2 }).observe(video);
+    }
 
-    select(0, false);
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => lockHeight());
-    let rz;
-    window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(lockHeight, 200); });
+    (async () => {
+      for (let n = 1; n <= VIDEO_MAX; n++) {
+        const src = `${VIDEO_DIR}example${n}.mp4`, poster = `${VIDEO_DIR}example${n}.jpg`;
+        const [hasVideo, hasPoster] = await Promise.all([fileExists(src, "video"), fileExists(poster, "image")]);
+        if (!hasVideo) break;
+        addTab({ n, src, poster: hasPoster ? poster : "" });
+        if (n === 1) select(0, false);
+      }
+      if (!items.length) {
+        tabsEl.hidden = true;
+        replay.hidden = true;
+        screen.style.setProperty("--ar", "4 / 1");   // a slim placeholder band instead of an empty 16:9 frame
+        missing.textContent = "Videos coming soon";
+        missing.hidden = false;
+      }
+    })();
   }
 
   /* ------------------------------------------------------------------
@@ -1206,12 +1100,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
       p.dot.style.display = i === -1 ? "none" : "";
       if (i !== -1) { const ys = p.data[key]; p.dot.setAttribute("cx", p.x(8)); p.dot.setAttribute("cy", p.y(ys[7])); p.dot.parentNode.append(p.dot); }
     });
-    const leg = $("#dyn-legend");
-    if (leg) {
-      leg.replaceChildren(
-        el("span", {}, el("i", { class: "sel" }), key ? `${DYN.names[key]} (this case)` : "This case is not part of Figure 3"),
-        el("span", {}, el("i"), key ? "Other scenarios" : "Foggy Road, Urban Intersection, Night Accident, Parking Exit"));
-    }
+    $$("#dyn-seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === key)));
   }
   function initDyn() {
     const grid = $("#dyn-grid");
@@ -1281,6 +1170,14 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
     DYN.order.forEach(k => panels.forEach(P => tb.append(el("tr", {}, el("td", { text: `${DYN.names[k]} · ${P.title}` }), ...DYN[P.key][k].map(v => el("td", { text: v.toFixed(2) }))))));
     tbl.append(tb);
     $("#dyn-table").append(tbl);
+    // scenario picker: the chosen scenario is drawn in white, the others in grey
+    const seg = $("#dyn-seg");
+    if (seg) DYN.order.forEach(k => {
+      const b = el("button", { type: "button", "aria-pressed": "false", "data-v": k, text: DYN.names[k] });
+      b.addEventListener("click", () => highlightDyn(k));
+      seg.append(b);
+    });
+    highlightDyn("foggy");
   }
 
   /* ------------------------------------------------------------------
@@ -1494,7 +1391,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 
   initDyn();
   initHero();
-  initExplorer();
+  initPlayer();
   initDumbbell();
   initBoard();
   initCopy();
