@@ -54,6 +54,7 @@
   --dyn-other:#59626b;     /* other scenarios in the dark-band chart */
   --ghost-blend:multiply;  /* heading ghosts: colour fringes only, text stays solid */
   --video-bg:#0b0d10;      /* letterbox behind the case videos (dark in both themes) */
+  --route:#f2c40f;         /* the yellow route line drawn in the videos */
   /* the four maneuvers: light-surface steps, then dark-surface steps */
   --stop:#e34948; --decel:#eda100; --go:#1baf7a; --lane:#2a78d6;
   --stop-d:#d63a3f; --decel-d:#c98500; --go-d:#199e70; --lane-d:#3987e5;
@@ -310,14 +311,27 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 .tab[aria-selected="true"]{color:var(--on-monitor)}
 .tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;border-radius:2px 2px 0 0;background:var(--on-monitor)}
 /* video player: one clip per tab, native controls (seek, pause, time, volume, fullscreen) plus Replay */
-.vplayer{margin:28px 0 0}
+/* The video is never shown wider than its own pixels (--vw), never wider than 820px,
+   and never taller than the screen allows, so the whole frame fits under the tabs.
+   --ar / --arn / --vw are set from the clip's metadata. */
+.vplayer{margin:28px 0 0;display:flex;flex-wrap:wrap;gap:22px 40px;align-items:flex-start}
+.vp-main{flex:0 1 auto;min-width:0;width:min(100%, var(--vw, 1280px), 820px, calc((100vh - 140px) * var(--arn, 1.7778)))}
+@supports (height:100svh){.vp-main{width:min(100%, var(--vw, 1280px), 820px, calc((100svh - 140px) * var(--arn, 1.7778)))}}
 .vp-screen{aspect-ratio:var(--ar,16/9);background:var(--video-bg);border:1px solid var(--monitor-line);border-radius:12px}
 .vp-screen video{display:block;width:100%;height:100%;object-fit:contain;background:var(--video-bg)}
-.vp-screen .tag{pointer-events:none}
 .vp-missing{position:absolute;inset:0;margin:0;display:grid;place-items:center;font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--on-monitor-muted);background:var(--monitor)}
-.vp-foot{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 24px;flex-wrap:wrap;margin-top:14px}
-.ex-meta{font-size:15.5px;line-height:1.5;color:var(--on-monitor-2);max-width:72ch;min-width:0;flex:1 1 320px}
+.vp-side{flex:1 1 240px;min-width:0;display:grid;gap:26px;align-content:start}
+.vp-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.ex-meta{font-size:15.5px;line-height:1.5;color:var(--on-monitor-2);min-width:0}
 .ex-meta b{color:var(--on-monitor);font-weight:700}
+.vp-guide{border-top:1px solid var(--monitor-line);padding-top:16px}
+.vp-guide-k{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--on-monitor-muted);margin:0 0 12px}
+.vp-guide dl{margin:0;display:grid;gap:14px}
+.vp-guide dt{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--on-monitor)}
+.vp-guide dd{margin:3px 0 0;font-size:14px;line-height:1.5;color:var(--on-monitor-2)}
+.route-key{display:inline-block;width:16px;height:4px;border-radius:2px;background:var(--route)}
+.keys{display:inline-flex;gap:3px}
+.keys .key{width:8px;height:8px}
 .on-dark .icon-btn{font-size:13.5px}
 
 /* belief dynamics (small multiples) */
@@ -607,13 +621,26 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 
     <div class="tabs" role="tablist" aria-label="Driving cases" id="case-tabs"></div>
     <figure class="vplayer" id="vplayer" role="tabpanel">
-      <div class="screen vp-screen" id="vp-screen">
-        <video id="vp-video" controls playsinline preload="metadata"></video>
-        <p class="vp-missing" id="vp-missing" hidden>Video coming soon</p>
+      <div class="vp-main">
+        <div class="screen vp-screen" id="vp-screen">
+          <video id="vp-video" controls playsinline preload="metadata"></video>
+          <p class="vp-missing" id="vp-missing" hidden>Video coming soon</p>
+        </div>
       </div>
-      <figcaption class="vp-foot">
-        <p class="ex-meta" id="vp-note"></p>
-        <button class="icon-btn" type="button" id="vp-replay" aria-label="Replay from the beginning"><svg viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.1 2.66A4.2 4.2 0 1 1 3.9 2.66"/><path d="M1.54 2.24 3.9 2.66 3.08 4.92"/></svg><span>Replay</span></button>
+      <figcaption class="vp-side">
+        <div class="vp-head">
+          <p class="ex-meta" id="vp-note"></p>
+          <button class="icon-btn" type="button" id="vp-replay" aria-label="Replay from the beginning"><svg viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.1 2.66A4.2 4.2 0 1 1 3.9 2.66"/><path d="M1.54 2.24 3.9 2.66 3.08 4.92"/></svg><span>Replay</span></button>
+        </div>
+        <div class="vp-guide" id="vp-guide">
+          <p class="vp-guide-k">Reading the videos</p>
+          <dl>
+            <div><dt><i class="route-key" aria-hidden="true"></i>Yellow line</dt><dd>The route the car actually drove over the next 4 s.</dd></div>
+            <div><dt><span class="keys" aria-hidden="true"><i class="key" data-m="stop"></i><i class="key" data-m="decel"></i><i class="key" data-m="go"></i><i class="key" data-m="lane"></i></span>Score</dt><dd>Belief weight on each maneuver. The four always sum to 1.</dd></div>
+            <div><dt>Reason</dt><dd>The hypothesis behind each maneuver, rewritten as the scene changes.</dd></div>
+            <div><dt>Top bar</dt><dd>Simulation time, speed and the navigation command.</dd></div>
+          </dl>
+        </div>
       </figcaption>
     </figure>
 
@@ -1014,8 +1041,13 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
   function initPlayer() {
     const tabsEl = $("#case-tabs");
     if (!tabsEl) return;
-    const video = $("#vp-video"), screen = $("#vp-screen"), missing = $("#vp-missing");
+    const video = $("#vp-video"), missing = $("#vp-missing"), guide = $("#vp-guide");
     const note = $("#vp-note"), panel = $("#vplayer"), replay = $("#vp-replay");
+    const setShape = (w, h, px) => {
+      panel.style.setProperty("--ar", `${w} / ${h}`);
+      panel.style.setProperty("--arn", (w / h).toFixed(4));
+      if (px) panel.style.setProperty("--vw", `${px}px`); else panel.style.removeProperty("--vw");
+    };
     const items = [], tabs = [];
     let cur = -1;
     const play = () => { const p = video.play(); if (p && p.catch) p.catch(() => {}); };
@@ -1054,7 +1086,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 
     // fit the frame to the clip's own aspect ratio once it is known
     video.addEventListener("loadedmetadata", () => {
-      if (video.videoWidth && video.videoHeight) screen.style.setProperty("--ar", `${video.videoWidth} / ${video.videoHeight}`);
+      if (video.videoWidth && video.videoHeight) setShape(video.videoWidth, video.videoHeight, video.videoWidth);
     });
     video.addEventListener("error", () => { if (video.getAttribute("src")) missing.hidden = false; });
     replay.addEventListener("click", () => { if (!items.length) return; video.currentTime = 0; play(); });
@@ -1074,7 +1106,8 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
       if (!items.length) {
         tabsEl.hidden = true;
         replay.hidden = true;
-        screen.style.setProperty("--ar", "4 / 1");   // a slim placeholder band instead of an empty 16:9 frame
+        setShape(4, 1);   // a slim placeholder band instead of an empty 16:9 frame
+        guide.hidden = true;
         missing.textContent = "Videos coming soon";
         missing.hidden = false;
       }
