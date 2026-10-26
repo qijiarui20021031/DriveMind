@@ -12,9 +12,9 @@ Yan Shi<sup>1</sup>, Kehua Chen<sup>1*</sup>, Jiarui Qi<sup>1</sup>, Yihong Tang
 
 ## Overview
 
-Multimodal LLM drivers usually reason from scratch at every frame and commit to a single interpretation of the scene. When the scene is ambiguous, they can act on the wrong interpretation before the evidence arrives.
+Human drivers read intent. They guess what other road users are about to do and revise those guesses as the scene unfolds, an ability known as theory of mind. Multimodal LLM drivers, by contrast, usually reason from scratch at every frame and commit to a single interpretation of the scene, so when the scene is ambiguous they can act on the wrong one before the evidence arrives.
 
-DriveMind keeps several natural-language hypotheses about the scene alive as a weighted belief and updates them as new camera frames arrive, following the predict, correct and resample steps of a particle filter. A slow vision-language reasoner updates the belief at about 2 Hz, and a fast diffusion controller plans trajectories at about 10 Hz from the latest belief.
+DriveMind gives an MLLM driver a mind that evolves in the same spirit. It keeps several natural-language hypotheses about the scene alive as a weighted belief, weighs each against every new camera frame, and keeps alternative explanations in play until the evidence settles them. A slow vision-language reasoner updates the belief at about 2 Hz, and a fast diffusion controller plans trajectories at about 10 Hz from the latest belief.
 
 On Bench2Drive, adding belief tracking to the same driving pipeline raises the Driving Score from 68.50 to 81.37 and the success rate from 41.36% to 54.09%. The largest gains come in ambiguous scenarios such as oncoming traffic (+20.5 DS) and unsignalized intersections (+20.0 DS).
 

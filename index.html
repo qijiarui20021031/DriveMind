@@ -162,6 +162,7 @@ p{margin:0;text-wrap:pretty}
 .authors sup{font-family:var(--mono);font-size:.66em;font-weight:500;color:var(--muted);margin-left:1px}
 .affil{display:block;margin-top:4px;font-size:14.5px;font-weight:400;color:var(--muted)}
 .lede{margin-top:22px;font-size:19px;line-height:1.5;color:var(--ink-2);max-width:44ch}
+.lede strong{font-weight:700;color:var(--ink)}
 .btns{margin-top:26px;display:flex;flex-wrap:wrap;gap:10px}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px 8px;border:1.5px solid var(--ink);border-radius:7px;font-weight:700;font-size:15px;line-height:1.2;text-decoration:none;color:var(--ink);background:transparent;cursor:pointer}
 .btn:hover{background:var(--ink);color:var(--bg)}
@@ -489,7 +490,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
       <span>DriveMind</span>
     </a>
     <div class="nav-links">
-      <a href="#idea">Idea</a>
+      <a href="#idea">Theory of mind</a>
       <a href="#method">Method</a>
       <a href="#examples">Examples</a>
       <a href="#results">Results</a>
@@ -512,9 +513,9 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
           <span class="a">Yihong Tang<sup>2</sup></span>,
           <span class="a">Haicheng Liao<sup>3</sup></span>,
           <span class="a">Yinhai Wang<sup>1*</sup></span>
-          <span class="affil"><sup>1</sup>University of Washington &nbsp;·&nbsp; <sup>2</sup>McGill University &nbsp;·&nbsp; <sup>3</sup>University of Michigan &nbsp;·&nbsp; <span style="white-space:nowrap"><sup>*</sup>Corresponding authors</span></span>
+          <span class="affil"><sup>1</sup>University of Washington&nbsp;&nbsp;·&ensp;<sup>2</sup>McGill University&nbsp;&nbsp;·&ensp;<span style="white-space:nowrap"><sup>3</sup>University of Michigan</span>&nbsp;&nbsp;·&ensp;<span style="white-space:nowrap"><sup>*</sup>Corresponding authors</span></span>
         </p>
-        <p class="lede">Multimodal LLM drivers usually reason from scratch at every frame and commit to a single reading of the scene. DriveMind keeps several readings alive as weighted hypotheses and lets each new frame reweigh them.</p>
+        <p class="lede">Human drivers read intent. They guess what other road users are about to do and revise the guess as the scene unfolds, an ability known as <strong>theory of mind</strong>. DriveMind gives a multimodal LLM driver a mind that evolves in the same spirit, holding several hypotheses about the scene and reweighing them with every new frame.</p>
         <div class="btns">
           <!-- LINKS: replace the arXiv placeholder when the preprint is public. -->
           <a class="btn btn--primary" href="static/DriveMind_NeurIPS2026.pdf" target="_blank" rel="noopener">
@@ -571,10 +572,11 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 <main>
 <section class="section" id="idea">
   <div class="wrap">
-    <h2 data-resolve>One reading per frame commits too early</h2>
+    <p class="eyebrow">Theory of mind</p>
+    <h2 data-resolve>Driving means reading other minds</h2>
     <div class="prose">
-      <p>Traffic is full of ambiguity. A slowing car may be yielding, preparing to turn, or reacting to an obstacle the ego vehicle cannot see. A pedestrian near the curb may cross, or may keep waiting.</p>
-      <p>Most MLLM-based drivers produce one rationale per frame and act on it. In closed loop, that action shapes the next observation, so a wrong first guess can reinforce itself before the evidence arrives. DriveMind carries a weighted set of hypotheses from frame to frame instead.</p>
+      <p>A slowing car may be yielding, preparing to turn, or reacting to an obstacle the ego vehicle cannot see. A pedestrian near the curb may cross, or may keep waiting. People handle this with theory of mind: they infer what others intend and revise that guess as behavior unfolds.</p>
+      <p>Most MLLM-based drivers produce one rationale per frame and act on it. In closed loop, that action shapes the next observation, so a wrong first guess can reinforce itself before the evidence arrives. DriveMind instead keeps several readings of the scene, including what other road users seem to be doing, and lets its mind evolve as each frame arrives.</p>
     </div>
     <div class="paradigms">
       <figure class="pfig">
@@ -592,27 +594,27 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 <section class="section" id="method">
   <div class="wrap">
     <p class="eyebrow">Method</p>
-    <h2 data-resolve>A particle filter whose particles are sentences</h2>
-    <p class="sec-lede">The belief is a small set of natural-language hypotheses, four in the main experiments, each a possible reading of the scene with a weight. A vision-language model (<span style="white-space:nowrap">Qwen3-VL-2B</span>) updates it about twice per second in three moves borrowed from particle filtering, while a fast controller steers from the latest belief.</p>
+    <h2 data-resolve>A mind that evolves with every frame</h2>
+    <p class="sec-lede">DriveMind’s belief is a small set of natural-language hypotheses, four in the main experiments. Each is one possible reading of the scene, with a weight for how well the evidence supports it. A vision-language model (<span style="white-space:nowrap">Qwen3-VL-2B</span>) revises the belief about twice per second in three steps, while a fast controller steers from the latest belief.</p>
 
     <div class="steps">
       <div class="step">
-        <span class="k">1 · Predict</span>
-        <h3>Propagate each hypothesis</h3>
+        <span class="k">1 · Update</span>
+        <h3>Revise each hypothesis</h3>
         <p>The VLM rewrites each hypothesis to fit the new camera frame and the action just taken.</p>
       </div>
       <div class="step">
-        <span class="k">2 · Correct</span>
-        <h3>Reweigh against the evidence</h3>
+        <span class="k">2 · Weigh</span>
+        <h3>Weigh it against the evidence</h3>
         <p>A second VLM pass scores each hypothesis from 1 to 10 for how well it fits the frame. Weight shifts toward the better-supported ones.</p>
       </div>
       <div class="step">
-        <span class="k">3 · Resample</span>
-        <h3>Keep the set diverse</h3>
-        <p>When the weight piles up on too few hypotheses, the set is resampled. Near-duplicates are rewritten as different readings that still fit the frame, so alternatives stay available.</p>
+        <span class="k">3 · Diversify</span>
+        <h3>Keep other explanations alive</h3>
+        <p>When the weight piles up on too few hypotheses, the set is redrawn by weight and near-duplicates are rewritten as different readings that still fit the frame, so alternatives stay in mind.</p>
       </div>
       <div class="step">
-        <span class="k">4 · Control</span>
+        <span class="k">4 · Act</span>
         <h3>Steer from the latest belief</h3>
         <p>A diffusion controller plans the next eight waypoints at 10 Hz from a weighted blend of all hypotheses. It reuses the latest belief between updates, so control never waits for reasoning.</p>
       </div>
@@ -722,7 +724,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 <section class="section section--quiet" id="limits">
   <div class="wrap limits">
     <h2>Limitations</h2>
-    <p>Most failures come from belief updates that arrive too late or from too little visual evidence, as in very dense multi-agent traffic, fast objects that appear between two slow updates, or long occlusions. The scorer can also favour unsupported or outdated hypotheses and delay the correction. The number of hypotheses and the update rate are fixed for now. Adapting them to scene complexity, and adding other agents’ intentions to the hypothesis space, are next steps.</p>
+    <p>Most failures come from belief updates that arrive too late or from too little visual evidence, as in very dense multi-agent traffic, fast objects that appear between two slow updates, or long occlusions. The scorer can also favor unsupported or outdated hypotheses and delay the correction. The number of hypotheses and the update rate are fixed for now. Adapting them to scene complexity, and adding other agents’ intentions to the hypothesis space, are next steps.</p>
   </div>
 </section>
 
