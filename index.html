@@ -284,11 +284,22 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 .band .eyebrow{color:var(--on-monitor-muted)}
 .band .sec-lede{color:var(--on-monitor-2)}
 .lane-mark{height:3px;margin-bottom:clamp(40px,6vw,64px);background:repeating-linear-gradient(90deg,var(--on-monitor-muted) 0 36px,transparent 36px 64px);opacity:.45}
-.tabs{display:flex;flex-wrap:wrap;gap:4px 22px;margin-top:34px;border-bottom:1px solid var(--monitor-line)}
-.tab{background:transparent;border:0;padding:10px 0 9px;font-size:15.5px;font-weight:650;color:var(--on-monitor-muted);cursor:pointer;position:relative;white-space:nowrap}
+/* Tabs stay on one line. When they do not fit (phones, or many videos) the row scrolls
+   sideways and fades at the edge that has more tabs. The 6px padding, cancelled by the
+   negative margin, keeps the focus ring from being clipped; the baseline is a background
+   line so it lines up with the column. */
+.tabs{display:flex;gap:22px;margin:28px -6px 0;padding:6px 6px 0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;
+  background:linear-gradient(var(--monitor-line),var(--monitor-line)) no-repeat 6px 100%/calc(100% - 12px) 1px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs.fade-r{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 56px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 56px),transparent)}
+.tabs.fade-l{-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 56px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 56px),transparent)}
+.tabs.fade-l.fade-r{-webkit-mask-image:linear-gradient(to right,transparent,#000 56px,#000 calc(100% - 56px),transparent);mask-image:linear-gradient(to right,transparent,#000 56px,#000 calc(100% - 56px),transparent)}
+.tab{flex:none;background:transparent;border:0;padding:10px 0;font-size:15.5px;font-weight:650;color:var(--on-monitor-muted);cursor:pointer;position:relative;white-space:nowrap}
 .tab:hover{color:var(--on-monitor)}
+.tab:focus-visible{outline:none}
+.tab:focus-visible::before{content:"";position:absolute;inset:3px -5px 5px;border:2px solid var(--ink);border-radius:4px}
 .tab[aria-selected="true"]{color:var(--on-monitor)}
-.tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;border-radius:2px 2px 0 0;background:var(--on-monitor)}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;border-radius:2px 2px 0 0;background:var(--on-monitor)}
 /* video player: one clip per tab, native controls (seek, pause, time, volume, fullscreen) plus Replay */
 /* The video is never shown wider than its own pixels (--vw), never wider than 820px,
    and never taller than the screen allows, so the whole frame fits under the tabs.
@@ -612,7 +623,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
         <div class="vp-guide" id="vp-guide">
           <p class="vp-guide-k">Reading the videos</p>
           <dl>
-            <div><dt><i class="route-key" aria-hidden="true"></i>Yellow line</dt><dd>The route the car actually drove over the next 4 s.</dd></div>
+            <div><dt><i class="route-key" aria-hidden="true"></i>Yellow line</dt><dd>The route the car actually drove over the next few seconds.</dd></div>
             <div><dt><span class="keys" aria-hidden="true"><i class="key" data-m="stop"></i><i class="key" data-m="decel"></i><i class="key" data-m="go"></i><i class="key" data-m="lane"></i></span>Score</dt><dd>Belief weight on each maneuver. The four always sum to 1.</dd></div>
             <div><dt>Reason</dt><dd>The hypothesis behind each maneuver, rewritten as the scene changes.</dd></div>
             <div><dt>Top bar</dt><dd>Simulation time, speed and the navigation command.</dd></div>
@@ -1038,10 +1049,27 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
         if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
         e.preventDefault();
         const j = (i + (e.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
-        select(j, true); tabs[j].focus();
+        select(j, true); tabs[j].focus({ preventScroll: true });
       });
       tabsEl.append(b);
       tabs.push(b);
+      edges();
+    }
+
+    // When the tabs overflow their row: fade the side that hides more tabs ...
+    function edges() {
+      const max = tabsEl.scrollWidth - tabsEl.clientWidth;
+      tabsEl.classList.toggle("fade-l", max > 1 && tabsEl.scrollLeft > 1);
+      tabsEl.classList.toggle("fade-r", max > 1 && tabsEl.scrollLeft < max - 1);
+    }
+    tabsEl.addEventListener("scroll", edges, { passive: true });
+    window.addEventListener("resize", edges);
+    if (document.fonts) document.fonts.ready.then(edges);
+    // ... and slide the chosen tab clear of the faded edge
+    function reveal(b) {
+      const r = b.getBoundingClientRect(), R = tabsEl.getBoundingClientRect(), pad = 56;
+      const dx = r.left < R.left + pad ? r.left - R.left - pad : r.right > R.right - pad ? r.right - R.right + pad : 0;
+      if (dx) tabsEl.scrollBy({ left: dx, behavior: RM ? "auto" : "smooth" });
     }
 
     function select(i, fromUser) {
@@ -1049,6 +1077,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
       cur = i;
       const v = items[i];
       tabs.forEach((b, j) => { b.setAttribute("aria-selected", String(j === i)); b.tabIndex = j === i ? 0 : -1; });
+      if (fromUser) reveal(tabs[i]);
       panel.setAttribute("aria-labelledby", `tab-example${v.n}`);
       video.pause();
       missing.hidden = true;
