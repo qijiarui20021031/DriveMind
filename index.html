@@ -984,22 +984,19 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
   }
 
   /* ------------------------------------------------------------------
-     CLOSED-LOOP VIDEOS (dark band)
-     Videos are found automatically, in order:
-       assets/videos/example1.mp4, example2.mp4, example3.mp4, ...
-     Each one becomes a tab (Example 1, Example 2, ...). The first missing
-     number ends the list, so adding example4.mp4 adds a fourth tab.
-     Optional: a still image with the same name (example1.jpg) is shown before
-     playback, and a sentence in VIDEO_NOTES is shown under the video.
+     CLOSED-LOOP VIDEOS
+     VIDEOS lists which files appear, in order: 3 means assets/videos/example3.mp4.
+     Tabs are numbered by position (Example 1, 2, 3, ...), so leaving a file out
+     never leaves a gap. To show another video, upload it and add its number here.
+     VIDEO_NOTES holds the sentence shown next to each video, keyed by file number.
+     Optional: a still image with the same name (example3.jpg) is shown before playback.
      Use MP4 files encoded with H.264 so every browser can play them.
      ------------------------------------------------------------------ */
   const VIDEO_DIR = "assets/videos/";
-  const VIDEO_MAX = 20;
+  const VIDEOS = [1, 3, 5];
   const VIDEO_NOTES = {
     1: "Following a car through a narrow lane.",
-    2: "Approaching a stop sign.",
     3: "Changing lanes.",
-    4: "Going straight.",
     5: "Merging into another lane."
   };
 
@@ -1038,7 +1035,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
     function addTab(item) {
       const i = items.length;
       items.push(item);
-      const b = el("button", { class: "tab", role: "tab", id: `tab-example${item.n}`, "aria-selected": "false", "aria-controls": "vplayer", tabindex: "-1", type: "button", text: `Example ${item.n}` });
+      const b = el("button", { class: "tab", role: "tab", id: `tab-example${item.n}`, "aria-selected": "false", "aria-controls": "vplayer", tabindex: "-1", type: "button", text: `Example ${item.label}` });
       b.addEventListener("click", () => select(i, true));
       b.addEventListener("keydown", e => {
         if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
@@ -1080,8 +1077,8 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
       video.src = v.src;
       video.load();
       const text = VIDEO_NOTES[v.n];
-      video.setAttribute("aria-label", `Example ${v.n}, closed-loop driving video${text ? `: ${text}` : ""}`);
-      note.replaceChildren(el("b", { text: text ? `Example ${v.n}. ` : `Example ${v.n}` }), text || "");
+      video.setAttribute("aria-label", `Example ${v.label}, closed-loop driving video${text ? `: ${text}` : ""}`);
+      note.replaceChildren(el("b", { text: text ? `Example ${v.label}. ` : `Example ${v.label}` }), text || "");
       if (fromUser) play();   // a tab click counts as a user gesture, so playback may start
     }
 
@@ -1097,12 +1094,12 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
     }
 
     (async () => {
-      for (let n = 1; n <= VIDEO_MAX; n++) {
+      for (const n of VIDEOS) {
         const src = `${VIDEO_DIR}example${n}.mp4`, poster = `${VIDEO_DIR}example${n}.jpg`;
         const [hasVideo, hasPoster] = await Promise.all([fileExists(src, "video"), fileExists(poster, "image")]);
-        if (!hasVideo) break;
-        addTab({ n, src, poster: hasPoster ? poster : "" });
-        if (n === 1) select(0, false);
+        if (!hasVideo) continue;          // a listed file that is not uploaded yet is skipped
+        addTab({ n, label: items.length + 1, src, poster: hasPoster ? poster : "" });
+        if (items.length === 1) select(0, false);
       }
       if (!items.length) {
         tabsEl.hidden = true;
