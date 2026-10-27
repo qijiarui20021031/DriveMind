@@ -160,8 +160,11 @@ p{margin:0;text-wrap:pretty}
 .mon-head b{font-weight:600;color:var(--on-monitor)}
 .mon-head span:first-child{min-width:0}
 .mon-head span:last-child{white-space:nowrap}
+@media (max-width:420px){.mon-head{font-size:11px;letter-spacing:0}}
+@media (max-width:380px){.mh-desc{display:none}}
 .screen{position:relative;border-radius:8px;overflow:hidden;background:var(--monitor-2);aspect-ratio:16/9;max-width:100%}
-.screen img{width:100%;height:100%;object-fit:cover}
+.screen video{display:block;width:100%;height:100%;object-fit:cover}
+.hero-screen{background:var(--video-bg)}
 .screen .tag{position:absolute;top:8px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;line-height:1;padding:5px 7px 4px;border-radius:4px;background:var(--overlay);color:var(--on-overlay)}
 .screen .tag.l{left:8px} .screen .tag.r{right:8px}
 .mbars{display:grid;gap:8px;margin-top:14px}
@@ -169,20 +172,20 @@ p{margin:0;text-wrap:pretty}
 .mb-l{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--on-monitor-2);white-space:nowrap}
 .key{width:9px;height:9px;border-radius:2px;background:var(--m);flex:none}
 .mb-track{height:10px;background:var(--monitor-2);border-radius:0 3px 3px 0}
-.mb-fill{display:block;height:100%;width:calc(var(--w,0) * 100%);background:var(--m);border-radius:0 3px 3px 0;transition:width .75s cubic-bezier(.2,.7,.2,1)}
+.mb-fill{display:block;height:100%;width:calc(var(--w,0) * 100%);background:var(--m);border-radius:0 3px 3px 0;transition:width .35s cubic-bezier(.2,.7,.2,1)}
 .mb-v{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;color:var(--on-monitor);font-size:13.5px}
-.lead{margin:14px 0 0;padding:12px 2px 0;border-top:1px solid var(--monitor-line);min-height:7.4em}
+.lead{margin:14px 0 0;padding:12px 2px 0;border-top:1px solid var(--monitor-line);min-height:5.6em}
 .lead .k{display:block;font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--on-monitor-muted);margin-bottom:5px}
 .lead q{display:block;font-size:15.5px;line-height:1.45;font-weight:var(--fw,600);transition:font-weight .6s}
 .lead .u{display:block;font-size:15.5px;line-height:1.45;color:var(--on-monitor-2)}
 .mon-ctrl{display:flex;align-items:center;gap:12px;margin-top:12px}
-.stages{display:flex;gap:6px;flex:1;min-width:0}
-.stage-btn{flex:1;min-width:0;position:relative;background:transparent;border:0;padding:12px 0 2px;text-align:left;cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--on-monitor-muted);white-space:nowrap}
-.stage-btn::before,.stage-btn .prog{content:"";position:absolute;left:0;top:0;height:4px;border-radius:2px}
-.stage-btn::before{right:0;background:var(--monitor-line)}
-.stage-btn .prog{width:0;background:var(--on-monitor);transition:width .35s linear}
-.stage-btn[aria-selected="true"]{color:var(--on-monitor)}
-.icon-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-2);background:var(--surface);color:var(--on-monitor);border-radius:7px;padding:7px 11px 6px;font-size:13px;font-weight:600;cursor:pointer;line-height:1;white-space:nowrap}
+/* clip timeline: colored by the maneuver that leads at each moment; the unplayed part is faded */
+.htl{position:relative;flex:1;min-width:72px;height:26px;cursor:pointer;touch-action:none;border-radius:4px}
+.htl-track{position:absolute;left:0;right:0;top:11px;height:4px;border-radius:2px;display:flex;overflow:hidden}
+.htl-track i{display:block;height:100%;background:var(--m)}
+.htl-rest{position:absolute;top:11px;right:0;left:calc(var(--p,0) * 100%);height:4px;border-radius:0 2px 2px 0;background:var(--monitor);opacity:.62}
+.htl-head{position:absolute;top:6px;left:calc(var(--p,0) * 100%);width:3px;height:14px;margin-left:-1.5px;border-radius:2px;background:var(--on-monitor)}
+.icon-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-2);background:var(--surface);color:var(--on-monitor);border-radius:7px;padding:7px 11px 6px;font-size:13px;font-weight:600;cursor:pointer;line-height:1;white-space:nowrap;text-decoration:none}
 .icon-btn:hover{border-color:var(--on-monitor-muted)}
 .icon-btn svg{width:12px;height:12px}
 
@@ -504,31 +507,34 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
         </div>
       </div>
 
-      <figure class="monitor on-panel" id="hero-monitor" aria-label="Belief over four hypotheses as the car approaches an intersection with a cyclist">
-        <div class="mon-head"><span><b>Bench2Drive</b> · left turn, cyclist ahead</span><span data-role="t">t = 7–10</span></div>
-        <div class="screen">
-          <img data-role="frame" src="assets/cases/cyclist/10.jpg" width="366" height="206" alt="Front camera at an intersection, a cyclist crossing from the left">
-          <span class="tag l">CAM_FRONT</span><span class="tag r" data-role="fc">frame 10 / 10</span>
+      <!-- HERO CLIP: a short excerpt of Example 1 (assets/hero-clip.mp4). The bars and the
+           leading hypothesis follow the video; their values are set in HERO in the script. -->
+      <figure class="monitor on-panel" id="hero-monitor" aria-label="Closed-loop run, Example 1: as a pedestrian steps out from behind a parked car, the belief moves from Go straight to Decelerate to Stop, then back to Go straight once the road is clear">
+        <div class="mon-head"><span><b>Example 1</b><span class="mh-desc"> · pedestrian steps out</span></span><span data-role="t">t = 16.7 s</span></div>
+        <div class="screen hero-screen">
+          <video data-role="video" src="assets/hero-clip.mp4" poster="assets/hero-poster.jpg" width="1100" height="618" muted playsinline loop preload="auto" aria-hidden="true"></video>
+          <span class="tag l">Front camera</span><span class="tag r">Closed loop</span>
         </div>
         <div class="mbars" data-role="bars">
-          <div class="mb" data-m="stop" style="--w:.22"><span class="mb-l"><i class="key"></i>Stop</span><span class="mb-track"><span class="mb-fill"></span></span><span class="mb-v">0.22</span></div>
-          <div class="mb" data-m="decel" style="--w:.78"><span class="mb-l"><i class="key"></i>Decelerate</span><span class="mb-track"><span class="mb-fill"></span></span><span class="mb-v">0.78</span></div>
-          <div class="mb" data-m="go" style="--w:0"><span class="mb-l"><i class="key"></i>Go straight</span><span class="mb-track"><span class="mb-fill"></span></span><span class="mb-v">0.00</span></div>
-          <div class="mb" data-m="lane" style="--w:0"><span class="mb-l"><i class="key"></i>Lane change</span><span class="mb-track"><span class="mb-fill"></span></span><span class="mb-v">0.00</span></div>
+          <div class="mb" data-m="stop" style="--w:.76"><span class="mb-l"><i class="key"></i>Stop</span><span class="mb-track"><span class="mb-fill"></span></span><span class="mb-v">0.76</span></div>
+          <div class="mb" data-m="decel" style="--w:.19"><span class="mb-l"><i class="key"></i>Decelerate</span><span class="mb-track"><span class="mb-fill"></span></span><span class="mb-v">0.19</span></div>
+          <div class="mb" data-m="go" style="--w:.01"><span class="mb-l"><i class="key"></i>Go straight</span><span class="mb-track"><span class="mb-fill"></span></span><span class="mb-v">0.01</span></div>
+          <div class="mb" data-m="lane" style="--w:.04"><span class="mb-l"><i class="key"></i>Lane change</span><span class="mb-track"><span class="mb-fill"></span></span><span class="mb-v">0.04</span></div>
         </div>
-        <div class="lead" data-role="lead" aria-live="polite">
-          <span class="k">Leading hypothesis · Decelerate · 0.78</span>
-          <q style="--fw:740">I need to decelerate because the traffic light is red, a cyclist is actively crossing the intersection, and the navigation command is to turn left, requiring a cautious slowdown before maneuvering.</q>
+        <div class="lead" data-role="lead">
+          <span class="k">Leading hypothesis · Stop · 0.76</span>
+          <q style="--fw:740">A pedestrian is stepping out from between parked cars; stop.</q>
         </div>
         <div class="mon-ctrl">
-          <div class="stages" role="tablist" aria-label="Reasoning steps">
-            <button class="stage-btn" role="tab" aria-selected="false" data-stage="0"><span class="prog" style="width:100%"></span>t = 1–3</button>
-            <button class="stage-btn" role="tab" aria-selected="false" data-stage="1"><span class="prog" style="width:100%"></span>t = 4–6</button>
-            <button class="stage-btn" role="tab" aria-selected="true" data-stage="2"><span class="prog" style="width:100%"></span>t = 7–10</button>
+          <div class="htl" data-role="timeline" role="slider" tabindex="0" aria-label="Position in the clip" aria-valuemin="0" aria-valuemax="13.6" aria-valuenow="5.4" aria-valuetext="t = 16.7 s, Stop leads at 0.76" style="--p:.4">
+            <div class="htl-track" data-role="segs"></div><div class="htl-rest"></div><div class="htl-head"></div>
           </div>
           <button class="icon-btn" type="button" data-role="play" aria-label="Play">
             <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5v9l8-4.5z" fill="currentColor"/></svg><span>Play</span>
           </button>
+          <a class="icon-btn" href="#examples" data-role="more">
+            <svg viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1.5v8.5M2.5 6.6 6 10l3.5-3.4"/></svg><span>Full video</span>
+          </a>
         </div>
       </figure>
     </div>
@@ -726,7 +732,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 <footer class="foot">
   <div class="wrap">
     <p><b>DriveMind</b>, NeurIPS 2026<br>University of Washington<br>McGill University<br>University of Michigan</p>
-    <p>Camera frames come from CARLA scenarios in Bench2Drive, as shown in the paper’s figures. Set in Overpass, an open-source typeface inspired by Highway Gothic, the lettering of US road signs.</p>
+    <p>Camera frames and videos come from CARLA scenarios in Bench2Drive. Set in Overpass, an open-source typeface inspired by Highway Gothic, the lettering of US road signs.</p>
   </div>
 </footer>
 
@@ -749,7 +755,6 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
     return n;
   }
   const f2 = v => v.toFixed(2);
-  const pad = n => String(n).padStart(2, "0");
 
   /* ------------------------------------------------------------------
      DATA. Every number below is copied from the paper.
@@ -759,111 +764,6 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
     { key: "decel", label: "Decelerate" },
     { key: "go",    label: "Go straight" },
     { key: "lane",  label: "Lane change" }
-  ];
-
-  // Qualitative cases (Figures 4, 7, 8, 9, 10). Hypothesis k always predicts maneuver k.
-  // f = frame numbers shown in that stage, w = belief weights, h = hypothesis text.
-  const CASES = [
-    { id: "fog", tab: "Fog and a pedestrian", fig: "Paper Fig. 8", dyn: "foggy", frames: 11,
-      setting: "Fog and a wet road, with a pedestrian near a bus stop.",
-      note: "Belief moves to deceleration early and stays there, reaching 0.99 at the last step.",
-      stages: [
-        { t: "1–3", f: [1, 2, 3], w: [.25, .25, .25, .25], h: [
-          "I need to stop because there is a large puddle directly ahead that could cause a hazard.",
-          "I need to decelerate because the road is wet and visibility is low due to fog, requiring cautious driving.",
-          "I need to go-straight because the navigation command is to follow lane and there are no obstacles forcing a change in direction.",
-          "I need to lane-change because there are no visible vehicles or obstacles in adjacent lanes to justify changing lanes."] },
-        { t: "4–7", f: [4, 5, 6, 7], w: [.01, .96, .03, .00], h: [
-          "I need to stop because the large puddle is no longer directly ahead and does not pose an immediate hazard, but the pedestrian and foggy conditions may require slowing down.",
-          "I need to decelerate because the road is wet, visibility is low due to fog, and there is a pedestrian near the bus stop, requiring cautious driving.",
-          "I need to go-straight because the navigation command is to follow lane and there are no immediate obstacles forcing a change in direction, despite the pedestrian and foggy conditions.",
-          "I need to lane-change because there are no visible vehicles or obstacles in adjacent lanes to justify changing lanes, and the pedestrian is on the right side of the road."] },
-        { t: "8–11", f: [8, 9, 10, 11], w: [.01, .99, .00, .00], h: [
-          "I need to stop because the pedestrian is actively walking near the bus stop and the road conditions remain hazardous, making a full stop prudent to ensure safety.",
-          "I need to decelerate because the pedestrian is actively walking near the bus stop, visibility is low due to fog, and the road is wet, requiring cautious driving.",
-          "I need to go-straight because the navigation command is to follow lane and there are no immediate obstacles forcing a change in direction, despite the pedestrian and foggy conditions.",
-          "I need to lane-change because there are no visible vehicles or obstacles in adjacent lanes to justify changing lanes, and the pedestrian is on the right side of the road."] }
-      ] },
-    { id: "cyclist", tab: "Cyclist at a left turn", fig: "Paper Fig. 4", dyn: "urban", frames: 10,
-      setting: "An intersection with a left-turn command and a cyclist near the crosswalk.",
-      note: "Belief settles on caution. Decelerate ends at 0.78, and stop stays in play as a fallback at 0.22.",
-      stages: [
-        { t: "1–3", f: [1, 2, 3], w: [.25, .25, .25, .25], h: [
-          "I need to stop because there are vehicles and a cyclist ahead in the intersection, and stopping is required by traffic rules at a crosswalk.",
-          "I need to decelerate because there are vehicles and a cyclist ahead, and slowing down is prudent to maintain safe following distance.",
-          "I need to go-straight because the traffic light is green and there are no obstacles forcing a lane change, so continuing straight aligns with the navigation command.",
-          "I need to lane-change because there are no visible lane-change indicators or necessary reasons to change lanes in this straight-ahead scenario."] },
-        { t: "4–6", f: [4, 5, 6], w: [.10, .77, .01, .12], h: [
-          "I need to stop because the traffic light is green and there is a cyclist on the left, but no immediate obstacle or stop condition is visible.",
-          "I need to decelerate because the traffic light is green and there is a cyclist on the left, but no immediate obstacle or stop condition is visible.",
-          "I need to go-straight because the traffic light is green and there is a cyclist on the left, but no immediate obstacle or stop condition is visible.",
-          "I need to lane-change because the traffic light is green and there is a cyclist on the left, but no immediate obstacle or stop condition is visible."] },
-        { t: "7–10", f: [7, 8, 9, 10], w: [.22, .78, .00, .00], h: [
-          "I need to stop because the traffic light is red, a cyclist is actively crossing the intersection, and the navigation command is to turn left, requiring a full stop before maneuvering.",
-          "I need to decelerate because the traffic light is red, a cyclist is actively crossing the intersection, and the navigation command is to turn left, requiring a cautious slowdown before maneuvering.",
-          "I need to go-straight because the traffic light is red, a cyclist is actively crossing the intersection, and the navigation command is to turn left, but no immediate obstacle requires continuing straight.",
-          "I need to lane-change because the traffic light is red, a cyclist is actively crossing the intersection, and the navigation command is to turn left, which may require a lane change to position for the turn."] }
-      ] },
-    { id: "crosswalk", tab: "Pedestrian by a crosswalk", fig: "Paper Fig. 7", dyn: null, frames: 4,
-      setting: "A wet intersection with a pedestrian moving near the crosswalk.",
-      note: "Belief ends split between decelerate (0.55) and stop (0.45). Going straight and changing lanes drop to zero.",
-      stages: [
-        { t: "1–2", f: [1, 2], w: [.25, .25, .25, .25], h: [
-          "I need to stop because the pedestrian is crossing and I must yield to them.",
-          "I need to decelerate because the road is wet and visibility is low, requiring cautious driving.",
-          "I need to go-straight because the traffic light is green and there is no immediate obstacle in the path.",
-          "I need to lane-change because there is no visible traffic or obstacle requiring a lane change."] },
-        { t: "3", f: [3], w: [.45, .54, .01, .00], h: [
-          "I need to stop because the pedestrian is running on the sidewalk near a crosswalk and I must yield to them.",
-          "I need to decelerate because the road is wet and visibility is low, requiring cautious driving.",
-          "I need to go-straight because the pedestrian is on the sidewalk and there is no immediate obstacle blocking my path.",
-          "I need to lane-change because there is no visible traffic or obstacle requiring a lane change."] },
-        { t: "4", f: [4], w: [.45, .55, .00, .00], h: [
-          "I need to stop because the pedestrian is running on the sidewalk near a crosswalk and I must yield to them.",
-          "I need to decelerate because the road is wet and visibility is low, requiring cautious driving.",
-          "I need to go-straight because the pedestrian is on the sidewalk and there is no immediate obstacle blocking my path.",
-          "I need to lane-change because there is no visible traffic or obstacle requiring a lane change."] }
-      ] },
-    { id: "night", tab: "Police lights at night", fig: "Paper Fig. 10", dyn: "night", frames: 4,
-      setting: "A dark, wet road with a police vehicle and flashing lights ahead.",
-      note: "Ambiguity persists. Decelerate leads at 0.57, while go straight (0.27) and stop (0.16) keep part of the weight.",
-      stages: [
-        { t: "1–2", f: [1, 2], w: [.25, .25, .25, .25], h: [
-          "I need to stop because the planner has requested braking and the road conditions suggest caution, but no immediate stop is visually required.",
-          "I need to decelerate because the planner has requested braking and the environment is low-visibility and wet, warranting reduced speed.",
-          "I need to go-straight because the navigation command is to follow lane and there are no visible obstacles or lane-change cues.",
-          "I need to lane-change because there are no visible lane-change indicators or safety gaps to justify changing lanes in this traffic scenario."] },
-        { t: "3", f: [3], w: [.15, .54, .31, .00], h: [
-          "I need to stop because the planner has requested braking, the road conditions are low-visibility and wet, and there is a police vehicle ahead with flashing lights, indicating potential hazard.",
-          "I need to decelerate because the planner has requested braking, the environment is low-visibility and wet, and there is a police vehicle ahead with flashing lights, warranting reduced speed.",
-          "I need to go-straight because the navigation command is to follow lane and there are no visible obstacles or lane-change cues, despite the presence of a police vehicle ahead.",
-          "I need to lane-change because there are no visible lane-change indicators or safety gaps to justify changing lanes in this traffic scenario, despite the presence of a police vehicle ahead."] },
-        { t: "4", f: [4], w: [.16, .57, .27, .00], h: [
-          "I need to stop because the planner has requested braking, the road conditions are low-visibility and wet, and there is a police vehicle ahead with flashing lights, indicating potential hazard.",
-          "I need to decelerate because the planner has requested braking, the environment is low-visibility and wet, and there is a police vehicle ahead with flashing lights, warranting reduced speed.",
-          "I need to go-straight because the navigation command is to follow lane and there are no visible obstacles or lane-change cues, despite the presence of a police vehicle ahead with flashing lights.",
-          "I need to lane-change because there are no visible lane-change indicators or safety gaps to justify changing lanes in this traffic scenario, despite the presence of a police vehicle ahead with flashing lights."] }
-      ] },
-    { id: "parking", tab: "Leaving a parking spot", fig: "Paper Fig. 9", dyn: "parking", frames: 4,
-      setting: "A low-ambiguity exit onto a wet street, with a vehicle in the adjacent lane at first.",
-      note: "Once the lane is clear, go straight takes 0.99. DriveMind does not stay cautious when the evidence supports moving on.",
-      stages: [
-        { t: "1–3", f: [1, 2], w: [.25, .25, .25, .25], h: [
-          "I need to stop because the planner has requested braking and the road conditions may require caution, but no immediate obstacle is visible to justify a full stop.",
-          "I need to decelerate because the planner has requested braking and the road is wet, which may reduce traction and visibility, making a gradual slowdown prudent.",
-          "I need to go-straight because the navigation command is to follow the lane, and there are no visible obstacles or lane-change cues requiring deviation.",
-          "I need to lane-change because there is no visible reason to change lanes, and the navigation command is to follow the lane."] },
-        { t: "4–5", f: [3], w: [.01, .37, .61, .01], h: [
-          "I need to stop because the blue SUV is no longer directly in the adjacent lane, and the wet conditions are no longer an immediate collision risk, making stopping unnecessary.",
-          "I need to decelerate because the blue SUV is no longer directly in the adjacent lane, and the wet road conditions still require caution, but deceleration is no longer the most appropriate response.",
-          "I need to go-straight because the blue SUV is no longer directly in the adjacent lane, the navigation command is to follow the lane, and the road conditions are manageable, making continuing straight the safest and most aligned action.",
-          "I need to lane-change because the blue SUV is no longer directly in the adjacent lane, and there is no compelling reason to change lanes given the navigation command to follow the lane."] },
-        { t: "6–8", f: [4], w: [.00, .01, .99, .00], h: [
-          "I need to stop because the road is wet and a car is ahead, but there is no immediate collision risk, making stopping unnecessary.",
-          "I need to decelerate because the road is wet and a car is ahead, but the navigation command is to follow the lane, and deceleration is no longer the most appropriate response.",
-          "I need to go-straight because the road is wet, a car is ahead in the same lane, the navigation command is to follow the lane, and the conditions are manageable, making continuing straight the safest and most aligned action.",
-          "I need to lane-change because the road is wet, a car is ahead in the same lane, and there is no compelling reason to change lanes given the navigation command to follow the lane."] }
-      ] }
   ];
 
   // Figure 3: per-step belief statistics, read from the plotted curves (8 reasoning steps).
@@ -919,77 +819,168 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
     { n: "DriveMind", g: "ours", eff: "114.83 ± 0.33", com: "18.98 ± 0.12", sr: 54.09, ds: 81.37, srsd: "1.10", dssd: "1.41" }
   ];
 
-  const frameSrc = (c, i) => `assets/cases/${c.id}/${pad(i)}.jpg`;
   const fw = w => Math.round(330 + 540 * w);              // belief -> font weight
-  const isUniform = w => w.every(v => Math.abs(v - w[0]) < 1e-9);
-  function frameSeq(c) {
-    const seq = [];
-    c.stages.forEach((s, si) => s.f.forEach((f, fi) => seq.push({ si, f, fi, n: s.f.length })));
-    return seq;
-  }
-  function preload(c) { c.stages.forEach(s => s.f.forEach(i => { const im = new Image(); im.src = frameSrc(c, i); })); }
 
   /* ------------------------------------------------------------------
-     HERO MONITOR: autoplays the cyclist case once it is on screen.
+     HERO CLIP (assets/hero-clip.mp4): frames 65–104 of assets/videos/example1.mp4,
+     camera view only, with two 2-second holds so the key hypotheses can be read.
+     Scores and sentences are copied from that video's own overlay; the sentence is
+     the reason given for the maneuver that leads at that moment.
+     ------------------------------------------------------------------ */
+  const HERO = {
+    fps: 5, frames: 68,
+    tOffset: 0.3,                     // overlay time = source frame / 5 + 0.3 s
+    // [first clip frame, first source frame, number of clip frames, 1 = hold on that source frame]
+    segs: [[0, 65, 6, 0], [6, 70, 10, 1], [16, 71, 12, 0], [28, 82, 10, 1], [38, 83, 22, 0], [60, 104, 8, 1]],
+    // [source frame where the overlay changes, scores (stop, decelerate, go straight, lane change), sentence]
+    updates: [
+      [65,  [.07, .15, .69, .09], "The intersection is no longer blocked; proceed."],
+      [67,  [.09, .20, .48, .23], "The light is green and the junction is clear; proceed."],
+      [70,  [.23, .40, .30, .07], "Cars are parked at the roadside; a pedestrian may step out, so slow down and be ready to brake."],
+      [72,  [.34, .41, .12, .13], "Cars are parked at the roadside; a pedestrian may step out, so slow down and be ready to brake."],
+      [75,  [.40, .43, .05, .12], "A pedestrian is near the road ahead; slow down and be ready to brake."],
+      [77,  [.43, .32, .07, .18], "A pedestrian is at the roadside close ahead; stop."],
+      [80,  [.51, .31, .03, .15], "A collision is imminent; stop."],
+      [82,  [.76, .19, .01, .04], "A pedestrian is stepping out from between parked cars; stop."],
+      [85,  [.83, .13, .01, .03], "A collision is imminent; stop."],
+      [87,  [.82, .14, .01, .03], "A collision is imminent; stop."],
+      [90,  [.82, .15, .01, .02], "A collision is imminent; stop."],
+      [92,  [.34, .32, .26, .08], "A collision is imminent; stop."],
+      [95,  [.17, .24, .50, .09], "The road is straight and clear; keep the current speed."],
+      [97,  [.15, .26, .50, .09], "The road is straight and clear; keep the current speed."],
+      [100, [.16, .32, .42, .10], "The road is straight and clear; keep the current speed."],
+      [102, [.05, .20, .70, .05], "The road is straight and clear; keep the current speed."]
+    ]
+  };
+
+  /* ------------------------------------------------------------------
+     HERO MONITOR: plays the clip once it is on screen; the bars and the
+     leading hypothesis follow the frame being shown.
      ------------------------------------------------------------------ */
   function initHero() {
     const root = $("#hero-monitor");
     if (!root) return;
-    const c = CASES.find(x => x.id === "cyclist");
-    const seq = frameSeq(c);
-    const img = $("[data-role=frame]", root), tEl = $("[data-role=t]", root), fc = $("[data-role=fc]", root);
-    const lead = $("[data-role=lead]", root), rows = $$(".mb", root), stageBtns = $$(".stage-btn", root);
-    const playBtn = $("[data-role=play]", root);
-    let pos = seq.length - 1, timer = null, playing = false, onScreen = true;
+    const video = $("[data-role=video]", root), tEl = $("[data-role=t]", root), lead = $("[data-role=lead]", root);
+    const rows = $$(".mb", root), playBtn = $("[data-role=play]", root), more = $("[data-role=more]", root);
+    const tl = $("[data-role=timeline]", root), segsEl = $("[data-role=segs]", root);
+    const H = HERO, N = H.frames, dur = N / H.fps;
 
-    function show(p) {
-      pos = p;
-      const { si, f, fi, n } = seq[p], s = c.stages[si];
-      img.src = frameSrc(c, f);
-      tEl.textContent = `t = ${s.t}`;
-      fc.textContent = `frame ${pad(f)} / ${pad(c.frames)}`;
-      rows.forEach((r, k) => { r.style.setProperty("--w", s.w[k]); $(".mb-v", r).textContent = f2(s.w[k]); });
-      lead.replaceChildren();
-      if (isUniform(s.w)) {
-        lead.append(el("span", { class: "k", text: "Leading hypothesis" }),
-                    el("span", { class: "u", text: "None yet. All four hypotheses start at 0.25, one per maneuver." }));
-      } else {
-        const max = Math.max(...s.w), k = s.w.indexOf(max);
-        lead.append(el("span", { class: "k", text: `Leading hypothesis · ${MAN[k].label} · ${f2(max)}` }),
-                    el("q", { style: `--fw:${fw(max)}`, text: s.h[k] }));
-      }
-      stageBtns.forEach((b, k) => {
-        b.setAttribute("aria-selected", String(k === si));
-        $(".prog", b).style.width = k < si ? "100%" : k === si ? `${((fi + 1) / n) * 100}%` : "0%";
-      });
+    // clip frame -> source frame, and the first clip frame showing a given source frame
+    const srcOf = n => { for (const [n0, f0, c, hold] of H.segs) if (n < n0 + c) return hold ? f0 : f0 + n - n0; return H.segs[H.segs.length - 1][1]; };
+    const firstAt = f => { for (const [n0, f0, c, hold] of H.segs) if (!hold && f >= f0 && f < f0 + c) return n0 + f - f0; return 0; };
+    const frameAt = sec => Math.max(0, Math.min(N - 1, Math.floor(sec * H.fps + 1e-3)));
+    const ups = H.updates.map(([f, w, h]) => ({ f, w, h, n: firstAt(f), k: w.indexOf(Math.max(...w)) }));
+    const upAt = n => { const f = srcOf(n); let u = ups[0]; for (const x of ups) if (x.f <= f) u = x; return u; };
+
+    // timeline: one colored stretch per run of the same leading maneuver
+    ups.forEach((u, i) => {
+      const len = (i + 1 < ups.length ? ups[i + 1].n : N) - u.n, last = segsEl.lastElementChild;
+      if (last && last.dataset.m === MAN[u.k].key) last.style.flexGrow = String(+last.style.flexGrow + len);
+      else segsEl.append(el("i", { "data-m": MAN[u.k].key, style: `flex-grow:${len}` }));
+    });
+
+    let shownN = -1, shownU = null;
+    function render(n) {
+      if (n === shownN) return;
+      shownN = n;
+      const u = upAt(n), t = (srcOf(n) / H.fps + H.tOffset).toFixed(1);
+      tEl.textContent = `t = ${t} s`;
+      tl.setAttribute("aria-valuenow", (n / H.fps).toFixed(1));
+      tl.setAttribute("aria-valuetext", `t = ${t} s, ${MAN[u.k].label} leads at ${f2(u.w[u.k])}`);
+      if (u === shownU) return;
+      shownU = u;
+      rows.forEach((r, k) => { r.style.setProperty("--w", u.w[k]); $(".mb-v", r).textContent = f2(u.w[k]); });
+      lead.replaceChildren(el("span", { class: "k", text: `Leading hypothesis · ${MAN[u.k].label} · ${f2(u.w[u.k])}` }),
+                           el("q", { style: `--fw:${fw(u.w[u.k])}`, text: u.h }));
     }
+    // reserve room for the tallest sentence at the current width, so the controls never jump
+    function fitLead() {
+      const w = lead.getBoundingClientRect().width;
+      if (!w) return;
+      const probe = el("div", { class: "lead", "aria-hidden": "true", style: `position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;min-height:0;width:${w}px` });
+      root.append(probe);
+      let max = 0;
+      for (const u of ups) {
+        probe.replaceChildren(el("span", { class: "k", text: `Leading hypothesis · ${MAN[u.k].label} · ${f2(u.w[u.k])}` }),
+                              el("q", { style: `--fw:${fw(u.w[u.k])}`, text: u.h }));
+        max = Math.max(max, probe.getBoundingClientRect().height);
+      }
+      probe.remove();
+      lead.style.minHeight = `${Math.ceil(max)}px`;
+    }
+    let fitRaf = 0;
+    window.addEventListener("resize", () => { cancelAnimationFrame(fitRaf); fitRaf = requestAnimationFrame(fitLead); });
+    if (document.fonts) document.fonts.ready.then(fitLead);
+    fitLead();
+
+    const setP = p => tl.style.setProperty("--p", Math.max(0, Math.min(1, p)).toFixed(4));
+    const sync = () => { render(frameAt(video.currentTime)); setP(video.currentTime / dur); };
+
+    // follow the frame on screen (frame callbacks where supported, otherwise the clock).
+    // Until the clip plays or is moved, the poster is on screen, so the panel keeps showing it.
+    let live = false;
+    const hasVFC = "requestVideoFrameCallback" in HTMLVideoElement.prototype;
+    if (hasVFC) {
+      const onFrame = (now, meta) => { if (live) render(frameAt(meta.mediaTime)); video.requestVideoFrameCallback(onFrame); };
+      video.requestVideoFrameCallback(onFrame);
+    }
+    let raf = 0;
+    const tick = () => { if (!hasVFC) render(frameAt(video.currentTime)); setP(video.currentTime / dur); raf = video.paused ? 0 : requestAnimationFrame(tick); };
+    video.addEventListener("play", () => { live = true; cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); });
+    video.addEventListener("pause", () => { cancelAnimationFrame(raf); if (live) sync(); });
+    video.addEventListener("seeked", () => { if (live) sync(); });
+
+    // play while on screen, unless the visitor paused it or prefers reduced motion
+    let want = !RM, onScreen = !("IntersectionObserver" in window), ready = false;
     function setPlayLabel() {
-      playBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
-      playBtn.replaceChildren();
-      playBtn.innerHTML = playing
+      playBtn.setAttribute("aria-label", want ? "Pause" : "Play");
+      playBtn.innerHTML = want
         ? '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5h2v9H3zM7 1.5h2v9H7z" fill="currentColor"/></svg><span>Pause</span>'
         : '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5v9l8-4.5z" fill="currentColor"/></svg><span>Play</span>';
     }
-    function tick() {
-      clearTimeout(timer);
-      if (!playing || !onScreen) return;
-      const last = pos === seq.length - 1;
-      timer = setTimeout(() => { show(last ? 0 : pos + 1); tick(); }, last ? 3200 : 950);
+    function apply() {
+      if (want && onScreen && ready) {
+        const p = video.play();
+        if (p && p.catch) p.catch(() => { want = false; setPlayLabel(); });   // autoplay blocked: wait for a click
+      } else if (!video.paused) video.pause();
     }
-    function play() { playing = true; setPlayLabel(); if (pos === seq.length - 1) show(0); tick(); }
-    function pause() { playing = false; setPlayLabel(); clearTimeout(timer); }
-    playBtn.addEventListener("click", () => (playing ? pause() : play()));
-    stageBtns.forEach((b, k) => b.addEventListener("click", () => {
-      pause();
-      show(seq.findIndex(q => q.si === k && q.fi === c.stages[k].f.length - 1));
-    }));
-    preload(c);
-    show(pos);
+    playBtn.addEventListener("click", () => { want = !want; ready = true; setPlayLabel(); apply(); });
+    if (!onScreen) new IntersectionObserver(es => { onScreen = es[0].isIntersecting; apply(); }, { threshold: 0.25 }).observe(root);
+
+    // timeline: click or drag to move through the clip; arrow keys step between updates
+    const seekTo = sec => { live = true; video.currentTime = Math.max(0, Math.min(dur - 0.01, sec)); setP(video.currentTime / dur); if (video.paused) render(frameAt(video.currentTime)); };
+    const fromX = x => { const r = tl.getBoundingClientRect(); return ((x - r.left) / r.width) * dur; };
+    tl.addEventListener("pointerdown", e => {
+      if (e.button) return;
+      tl.setPointerCapture(e.pointerId);
+      seekTo(fromX(e.clientX));
+      const move = ev => seekTo(fromX(ev.clientX));
+      const end = () => { tl.removeEventListener("pointermove", move); tl.removeEventListener("pointerup", end); tl.removeEventListener("pointercancel", end); };
+      tl.addEventListener("pointermove", move); tl.addEventListener("pointerup", end); tl.addEventListener("pointercancel", end);
+    });
+    tl.addEventListener("keydown", e => {
+      const n = frameAt(video.currentTime);
+      let to;
+      if (e.key === "ArrowRight" || e.key === "ArrowUp") { const u = ups.find(x => x.n > n); to = u ? u.n : N - 1; }
+      else if (e.key === "ArrowLeft" || e.key === "ArrowDown") { const b = ups.filter(x => x.n < n); to = b.length ? b[b.length - 1].n : 0; }
+      else if (e.key === "Home") to = 0;
+      else if (e.key === "End") to = N - 1;
+      else return;
+      e.preventDefault();
+      want = false; setPlayLabel(); apply();
+      seekTo(to / H.fps);
+    });
+
+    // "Full video" opens Example 1 in the player below
+    more.addEventListener("click", () => {
+      const tab = document.getElementById("tab-example1"), v = document.getElementById("vp-video");
+      if (!tab) return;
+      if (tab.getAttribute("aria-selected") === "true") { if (v && v.paused) { const p = v.play(); if (p && p.catch) p.catch(() => {}); } }
+      else tab.click();
+    });
+
     setPlayLabel();
-    if ("IntersectionObserver" in window) {
-      new IntersectionObserver(es => { onScreen = es[0].isIntersecting; if (onScreen) tick(); else clearTimeout(timer); }, { threshold: 0.25 }).observe(root);
-    }
-    if (!RM) setTimeout(play, 900);
+    setTimeout(() => { ready = true; apply(); }, 900);   // let the title settle first
   }
 
   /* ------------------------------------------------------------------
@@ -1005,7 +996,11 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
   const VIDEO_DIR = "assets/videos/";
   const VIDEO_MAX = 20;
   const VIDEO_NOTES = {
-    // 1: "One sentence about Example 1.",
+    1: "Following a car through a narrow lane.",
+    2: "Approaching a stop sign.",
+    3: "Changing lanes.",
+    4: "Going straight.",
+    5: "Merging into another lane."
   };
 
   // Ask whether a file exists. Pages opened straight from disk cannot use fetch,
@@ -1084,8 +1079,8 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
       if (v.poster) video.poster = v.poster; else video.removeAttribute("poster");
       video.src = v.src;
       video.load();
-      video.setAttribute("aria-label", `Example ${v.n}, closed-loop driving video`);
       const text = VIDEO_NOTES[v.n];
+      video.setAttribute("aria-label", `Example ${v.n}, closed-loop driving video${text ? `: ${text}` : ""}`);
       note.replaceChildren(el("b", { text: text ? `Example ${v.n}. ` : `Example ${v.n}` }), text || "");
       if (fromUser) play();   // a tab click counts as a user gesture, so playback may start
     }
