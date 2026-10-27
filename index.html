@@ -28,36 +28,38 @@
    "monitor" panels; one full-bleed dark band holds the closed-loop cases.
    Left-aligned grid, max 1180px. Colour is reserved for the four maneuvers.
    ========================================================================== */
+/* One light theme on purpose: the page stays white whatever the visitor's system setting. */
 :root{
-  --bg:#f1f3f2;            /* concrete */
+  color-scheme:light;
+  --bg:#ffffff;            /* page */
   --surface:#ffffff;       /* cards */
-  --figure:#ffffff;        /* paper figures keep a white ground in both themes */
+  --figure:#ffffff;        /* paper figures */
   --ink:#0f1317;
   --ink-2:#353c44;
   --muted:#5b646e;
-  --line:#d5dad9;
-  --line-2:#b9c0c0;
-  --chip:#e3e7e6;
-  --shadow:rgba(15,19,23,.30);
+  --line:#dfe3e4;
+  --line-2:#c2c9ca;
+  --chip:#eef1f1;
+  --shadow:rgba(15,19,23,.16);
   --dot-base:#949da5;      /* chart: baseline marks */
-  --bar-other:#c4cacc;     /* chart: other methods */
+  --bar-other:#c9cfd1;     /* chart: other methods */
   --bar-mid:#86909a;       /* chart: our own ablation */
-  /* monitor + band (dark in both themes) */
-  --monitor:#16191d;
-  --monitor-2:#20242a;
-  --monitor-line:#31373e;
-  --on-monitor:#e9ecef;
-  --on-monitor-2:#c3cad1;
-  --on-monitor-muted:#97a0aa;
-  --overlay:rgba(10,12,14,.68);
-  --band:#16191d;
-  --dyn-other:#59626b;     /* other scenarios in the dark-band chart */
+  /* light panels (hero monitor, citation) and the tinted band behind the videos */
+  --monitor:#f5f7f7;
+  --monitor-2:#e8ecec;
+  --monitor-line:#dce1e2;
+  --on-monitor:#0f1317;
+  --on-monitor-2:#353c44;
+  --on-monitor-muted:#5b646e;
+  --overlay:rgba(10,12,14,.66);   /* labels laid over camera images */
+  --on-overlay:#f2f4f5;
+  --band:#f4f6f6;
+  --dyn-other:#b9c1c4;     /* other scenarios in the belief-dynamics chart */
   --ghost-blend:multiply;  /* heading ghosts: colour fringes only, text stays solid */
-  --video-bg:#0b0d10;      /* letterbox behind the case videos (dark in both themes) */
+  --video-bg:#0b0d10;      /* letterbox behind the case videos (the clips themselves are dark) */
   --route:#f2c40f;         /* the yellow route line drawn in the videos */
-  /* the four maneuvers: light-surface steps, then dark-surface steps */
+  /* the four maneuvers */
   --stop:#e34948; --decel:#eda100; --go:#1baf7a; --lane:#2a78d6;
-  --stop-d:#d63a3f; --decel-d:#c98500; --go-d:#199e70; --lane-d:#3987e5;
   /* type */
   --display:"Overpass","Helvetica Neue",Arial,sans-serif;
   --sans:"Overpass","Helvetica Neue",Arial,sans-serif;
@@ -65,26 +67,6 @@
   --math:"STIX Two Text","Cambria Math","Times New Roman",serif;
   --wrap:1180px;
   --gutter:clamp(16px,4vw,40px);
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#0e1013; --surface:#171a1e; --figure:#ffffff; --ink:#e8ebee; --ink-2:#c4cbd2; --muted:#959fa9;
-    --line:#262b31; --line-2:#3b434b; --chip:#22272d; --shadow:rgba(0,0,0,.55);
-    --dot-base:#69727b; --bar-other:#363d44; --bar-mid:#737d86;
-    --monitor:#1a1e23; --monitor-2:#23282e; --monitor-line:#363d45; --band:#14171b;
-    --stop:#d63a3f; --decel:#c98500; --go:#199e70; --lane:#3987e5;
-    --ghost-blend:screen;
-    color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#0e1013; --surface:#171a1e; --figure:#ffffff; --ink:#e8ebee; --ink-2:#c4cbd2; --muted:#959fa9;
-  --line:#262b31; --line-2:#3b434b; --chip:#22272d; --shadow:rgba(0,0,0,.55);
-  --dot-base:#69727b; --bar-other:#363d44; --bar-mid:#737d86;
-  --monitor:#1a1e23; --monitor-2:#23282e; --monitor-line:#363d45; --band:#14171b;
-  --stop:#d63a3f; --decel:#c98500; --go:#199e70; --lane:#3987e5;
-  --ghost-blend:screen;
-  color-scheme:dark;
 }
 
 /* ---------- base ---------- */
@@ -101,8 +83,7 @@ p{margin:0;text-wrap:pretty}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .mono{font-family:var(--mono)}
 [data-m="stop"]{--m:var(--stop)} [data-m="decel"]{--m:var(--decel)} [data-m="go"]{--m:var(--go)} [data-m="lane"]{--m:var(--lane)}
-.on-dark{--stop:var(--stop-d);--decel:var(--decel-d);--go:var(--go-d);--lane:var(--lane-d);--ghost-blend:screen;color:var(--on-monitor)}
-.on-dark :focus-visible{outline-color:var(--on-monitor)}
+.on-panel{color:var(--on-monitor)}
 
 /* ---------- navigation ---------- */
 .nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--bg);background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
@@ -170,8 +151,6 @@ p{margin:0;text-wrap:pretty}
 .btn:hover{background:var(--ink);color:var(--bg)}
 .btn--primary{background:var(--ink);color:var(--bg)}
 .btn--primary:hover{background:var(--ink-2);border-color:var(--ink-2)}
-.btn--soon{border-style:dashed;border-color:var(--line-2);color:var(--muted);cursor:default}
-.btn--soon:hover{background:transparent;color:var(--muted)}
 .btn small{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase}
 .btn svg{width:16px;height:16px;flex:none}
 
@@ -183,7 +162,7 @@ p{margin:0;text-wrap:pretty}
 .mon-head span:last-child{white-space:nowrap}
 .screen{position:relative;border-radius:8px;overflow:hidden;background:var(--monitor-2);aspect-ratio:16/9;max-width:100%}
 .screen img{width:100%;height:100%;object-fit:cover}
-.screen .tag{position:absolute;top:8px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;line-height:1;padding:5px 7px 4px;border-radius:4px;background:var(--overlay);color:var(--on-monitor)}
+.screen .tag{position:absolute;top:8px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;line-height:1;padding:5px 7px 4px;border-radius:4px;background:var(--overlay);color:var(--on-overlay)}
 .screen .tag.l{left:8px} .screen .tag.r{right:8px}
 .mbars{display:grid;gap:8px;margin-top:14px}
 .mb{display:grid;grid-template-columns:minmax(0,108px) minmax(0,1fr) 40px;align-items:center;gap:10px;font-size:14px}
@@ -203,7 +182,7 @@ p{margin:0;text-wrap:pretty}
 .stage-btn::before{right:0;background:var(--monitor-line)}
 .stage-btn .prog{width:0;background:var(--on-monitor);transition:width .35s linear}
 .stage-btn[aria-selected="true"]{color:var(--on-monitor)}
-.icon-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--monitor-line);background:var(--monitor-2);color:var(--on-monitor);border-radius:7px;padding:7px 11px 6px;font-size:13px;font-weight:600;cursor:pointer;line-height:1;white-space:nowrap}
+.icon-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-2);background:var(--surface);color:var(--on-monitor);border-radius:7px;padding:7px 11px 6px;font-size:13px;font-weight:600;cursor:pointer;line-height:1;white-space:nowrap}
 .icon-btn:hover{border-color:var(--on-monitor-muted)}
 .icon-btn svg{width:12px;height:12px}
 
@@ -319,7 +298,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 @supports (height:100svh){.vp-main{width:min(100%, var(--vw, 1280px), 820px, calc((100svh - 140px) * var(--arn, 1.7778)))}}
 .vp-screen{aspect-ratio:var(--ar,16/9);background:var(--video-bg);border:1px solid var(--monitor-line);border-radius:12px}
 .vp-screen video{display:block;width:100%;height:100%;object-fit:contain;background:var(--video-bg)}
-.vp-missing{position:absolute;inset:0;margin:0;display:grid;place-items:center;font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--on-monitor-muted);background:var(--monitor)}
+.vp-missing{position:absolute;inset:0;margin:0;display:grid;place-items:center;font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--on-monitor-muted);background:var(--surface)}
 .vp-side{flex:1 1 240px;min-width:0;display:grid;gap:26px;align-content:start}
 .vp-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .ex-meta{font-size:15.5px;line-height:1.5;color:var(--on-monitor-2);min-width:0}
@@ -332,19 +311,15 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 .route-key{display:inline-block;width:16px;height:4px;border-radius:2px;background:var(--route)}
 .keys{display:inline-flex;gap:3px}
 .keys .key{width:8px;height:8px}
-.on-dark .icon-btn{font-size:13.5px}
+.on-panel .icon-btn{font-size:13.5px}
 
 /* belief dynamics (small multiples) */
 .dyn{margin-top:clamp(56px,7vw,80px);position:relative}
 .dyn > p{margin-top:12px;max-width:66ch;color:var(--on-monitor-2)}
 #dyn-seg{margin-top:18px}
-.on-dark .seg{background:var(--monitor);border-color:var(--monitor-line)}
-.on-dark .seg button{color:var(--on-monitor-muted)}
-.on-dark .seg button:hover{color:var(--on-monitor)}
-.on-dark .seg button[aria-pressed="true"]{background:var(--on-monitor);color:var(--band)}
 .dyn-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:14px}
 @media (max-width:860px){.dyn-grid{grid-template-columns:minmax(0,1fr)}}
-.dyn-panel{background:var(--monitor);border:1px solid var(--monitor-line);border-radius:10px;padding:12px 10px 6px;position:relative;min-width:0}
+.dyn-panel{background:var(--surface);border:1px solid var(--monitor-line);border-radius:10px;padding:12px 10px 6px;position:relative;min-width:0}
 .dyn-panel h4{margin:0 4px 4px;font-size:14px;font-weight:700;color:var(--on-monitor)}
 .dyn-panel h4 span{font-family:var(--math);font-style:italic;font-weight:400;color:var(--on-monitor-muted);margin-left:6px}
 .dyn svg{display:block;width:100%;height:auto;overflow:visible;touch-action:pan-y}
@@ -353,9 +328,9 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 .dref{stroke:var(--on-monitor-muted);stroke-width:1;stroke-dasharray:4 4}
 .dl{fill:none;stroke:var(--dyn-other);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
 .dl.sel{stroke:var(--on-monitor);stroke-width:2.4}
-.ddot{fill:var(--on-monitor);stroke:var(--monitor);stroke-width:2}
+.ddot{fill:var(--on-monitor);stroke:var(--surface);stroke-width:2}
 .dcross{stroke:var(--on-monitor-muted);stroke-width:1}
-.tip{position:absolute;z-index:5;pointer-events:none;min-width:150px;background:var(--monitor-2);border:1px solid var(--monitor-line);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.5;color:var(--on-monitor-2);box-shadow:0 12px 30px -12px rgba(0,0,0,.5)}
+.tip{position:absolute;z-index:5;pointer-events:none;min-width:150px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.5;color:var(--on-monitor-2);box-shadow:0 12px 30px -12px var(--shadow)}
 .tip b{font-family:var(--mono);color:var(--on-monitor);font-weight:600}
 .tip .t{font-family:var(--mono);font-size:11px;color:var(--on-monitor-muted);margin-bottom:2px}
 .tip .row{display:flex;justify-content:space-between;gap:14px}
@@ -405,9 +380,9 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
 .tv th,.tv td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .tv th:first-child,.tv td:first-child{text-align:left;white-space:normal}
 .tv th{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--muted)}
-.on-dark .tv summary{color:var(--on-monitor-2)}
-.on-dark .tv th,.on-dark .tv td{border-bottom-color:var(--monitor-line)}
-.on-dark .tv th{color:var(--on-monitor-muted)}
+.on-panel .tv summary{color:var(--on-monitor-2)}
+.on-panel .tv th,.on-panel .tv td{border-bottom-color:var(--monitor-line)}
+.on-panel .tv th{color:var(--on-monitor-muted)}
 .charttip{position:absolute;z-index:5;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:8px;padding:8px 11px;font-size:13px;line-height:1.45;max-width:260px;box-shadow:0 12px 28px -12px var(--shadow)}
 .charttip b{font-family:var(--mono);font-weight:600}
 .charttip .t{opacity:.75;font-size:12px}
@@ -502,21 +477,23 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
         </p>
         <p class="lede">Human drivers read intent. They guess what other road users are about to do and revise the guess as the scene unfolds, an ability known as <strong>theory of mind</strong>. DriveMind gives a multimodal LLM driver a mind that evolves in the same spirit, holding several hypotheses about the scene and reweighing them with every new frame.</p>
         <div class="btns">
-          <!-- LINKS: replace the arXiv placeholder when the preprint is public. -->
           <a class="btn btn--primary" href="static/DriveMind_NeurIPS2026.pdf" target="_blank" rel="noopener">
             <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 1.8h5.2L12.6 5v9.2H4z"/><path d="M9 1.8V5.3h3.6"/></svg>
             Paper
+          </a>
+          <a class="btn" href="https://arxiv.org/abs/2610.32069" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 2.6h12.4v3.2H1.8z"/><path d="M3 5.8v7.6h10V5.8"/><path d="M6.4 8.6h3.2"/></svg>
+            arXiv
           </a>
           <a class="btn" href="https://github.com/shiyannacl/drivemind" target="_blank" rel="noopener">
             <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 4.5 2 8l3.5 3.5"/><path d="M10.5 4.5 14 8l-3.5 3.5"/></svg>
             Code
           </a>
-          <span class="btn btn--soon" title="Link will be added when the preprint is public">arXiv <small>soon</small></span>
           <a class="btn" href="#cite">BibTeX</a>
         </div>
       </div>
 
-      <figure class="monitor on-dark" id="hero-monitor" aria-label="Belief over four hypotheses as the car approaches an intersection with a cyclist">
+      <figure class="monitor on-panel" id="hero-monitor" aria-label="Belief over four hypotheses as the car approaches an intersection with a cyclist">
         <div class="mon-head"><span><b>Bench2Drive</b> · left turn, cyclist ahead</span><span data-role="t">t = 7–10</span></div>
         <div class="screen">
           <img data-role="frame" src="assets/cases/cyclist/10.jpg" width="366" height="206" alt="Front camera at an intersection, a cyclist crossing from the left">
@@ -612,7 +589,7 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
   </div>
 </section>
 
-<section class="band on-dark" id="examples">
+<section class="band on-panel" id="examples">
   <div class="wrap">
     <div class="lane-mark" aria-hidden="true"></div>
     <p class="eyebrow">Closed-loop cases · Bench2Drive in CARLA</p>
@@ -716,11 +693,11 @@ h3{font-weight:750;font-size:22px;line-height:1.25;letter-spacing:-.01em;margin:
       <h2>Paper and citation</h2>
       <ul class="res">
         <li><a href="static/DriveMind_NeurIPS2026.pdf" target="_blank" rel="noopener">Paper (PDF)</a><span class="soon">NeurIPS 2026</span></li>
+        <li><a href="https://arxiv.org/abs/2610.32069" target="_blank" rel="noopener">arXiv</a><span class="soon">2610.32069</span></li>
         <li><a href="https://github.com/shiyannacl/drivemind" target="_blank" rel="noopener">Code</a><span class="soon">GitHub</span></li>
-        <li><span>arXiv</span><span class="soon">Coming soon</span></li>
       </ul>
     </div>
-    <div class="bib on-dark">
+    <div class="bib on-panel">
       <div class="bib-bar"><span>BibTeX</span><span><span class="copy-msg" id="copy-msg" aria-live="polite"></span><button class="icon-btn" type="button" id="copy-bib"><svg viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3.5" y="3.5" width="7" height="7" rx="1.2"/><path d="M8.5 3.5v-1.3c0-.6-.5-1-1-1H2.2c-.6 0-1 .4-1 1v5.3c0 .5.4 1 1 1h1.3"/></svg><span>Copy</span></button></span></div>
 <pre id="bibtex">@inproceedings{drivemind2026,
   title     = {DriveMind: Mind-Evolving Belief Tracking for

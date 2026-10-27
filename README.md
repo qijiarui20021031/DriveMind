@@ -6,7 +6,7 @@ Yan Shi<sup>1</sup>, Kehua Chen<sup>1*</sup>, Jiarui Qi<sup>1</sup>, Yihong Tang
 
 <sup>1</sup>University of Washington · <sup>2</sup>McGill University · <sup>3</sup>University of Michigan · <sup>*</sup>Corresponding authors
 
-**[Project page](https://qijiarui20021031.github.io/DriveMind/)** · **[Paper (PDF)](static/DriveMind_NeurIPS2026.pdf)** · **[Code](https://github.com/shiyannacl/drivemind)** · arXiv (coming soon)
+**[Project page](https://qijiarui20021031.github.io/DriveMind/)** · **[Paper (PDF)](static/DriveMind_NeurIPS2026.pdf)** · **[arXiv](https://arxiv.org/abs/2610.32069)** · **[Code](https://github.com/shiyannacl/drivemind)**
 
 [![DriveMind project page](assets/og.jpg)](https://qijiarui20021031.github.io/DriveMind/)
 
